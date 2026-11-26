@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Velox Integrated Station App - (VISA)</title>
+  <style>
+    :root {
+      --accent: #0b74de;
+      --muted: #6b7280;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --hover: #f1f5fb;
+    }
+    body {
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      margin: 0;
+      padding: 20px;
+      background: #f6f7fb;
+      color: #0f172a;
+    }
+    .container { max-width: 1250px; margin: 0 auto; }
+    header {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+      background: linear-gradient(90deg, #1976d2, #42a5f5);
+      padding: 14px 18px; border-radius: 10px; color: white;
+    }
+    header h1 { font-size: 1.15rem; margin: 0; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 6px 18px rgba(12, 12, 12, 0.06);
+      margin-bottom: 14px;
+    }
+    .grid { display: grid; gap: 12px; }
+    .cols-2 { grid-template-columns: repeat(2, 1fr); }
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    input[type=text], input[type=date], input[type=number] {
+      width: 100%; padding: 8px 10px;
+      border: 1px solid #e6e9ef;
+      border-radius: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color 0.2s ease;
+    }
+    input:focus { border-color: var(--accent); outline: none; }
+    table {
+      width: 100%; border-collapse: separate;
+      border-spacing: 0 6px; margin-top: 8px;
+    }
+    th, td {
+      padding: 10px;
+      background: white;
+      border: 1px solid var(--border);
+      text-align: left;
+      font-size: 13px;
+      height: 36px;
+      border-radius: 6px;
+    }
+    thead th {
+      background: #eaf3ff;
+      color: #0b3d91;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:hover td {
+      background: var(--hover);
+    }
+    .table-scroll {
+      overflow: auto;
+      max-height: 340px;
+      padding: 4px;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn {
+      background: #f0f5fb;
+      border: 1px solid #d6e9fb;
+      color: var(--accent);
+      width: 34px;
+      height: 32px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+    .icon-btn:hover { background: #e0ecfa; }
+    .flex-row { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
+    .denomination-table { flex: 1; max-width: 400px; }
+    .form-section { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Velox Integrated Station App - (VISA)</h1>
+        <p style="font-size: 13px; margin: 4px 0 0;>Unified DSR, Meter Reading, Shift Deposits and Station Collections - offline-capable web app</p>
+        <p style="font-size: 13px; margin: 4px 0 0;>Designed by: Joselito "Pogs" Ramos for Velox</p>
+      </div>
+    </header>
+
+    <div class="card">
+      <form id="dsrFixed">
+        <div class="flex-row">
+          <div class="form-section">
+            <div class="card">
+              <h4>Header Information</h4>
+              <div class="grid cols-2">
+                <div><label>Station ID</label><input type="text" id="stationID"></div>
+                <div><label>Station Name</label><input type="text" id="stationName"></div>
+                <div><label>Date</label><input type="date" id="date"></div>
+                <div><label>Shift</label><input type="text" id="shift"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h4>Cash Accounting</h4>
+              <div class="grid cols-2">
+                <div><label>Cash to be Accounted</label><input type="number"></div>
+                <div><label>Cash on Hand</label><input type="number"></div>
+                <div><label>Variance</label><input type="number"></div>
+                <div><label>Over / (Short)</label><input type="number"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h4>Cashless Payments</h4>
+              <div class="grid cols-2">
+                <div><label>Debit</label><input type="number"></div>
+                <div><label>Credit</label><input type="number"></div>
+                <div><label>GCash</label><input type="number"></div>
+                <div><label>Paymaya</label><input type="number"></div>
+              </div>
+            </div>
+
+            <div class="credit">
+              <h4>Credit Sales</h4>
+              <div class="grid cols-2">
+                <div><label>Credit Customer Sales</label><input type="number"></div>
+                <div><label>Prepayment Sales</label><input type="number"></div>
+                <div><label>Fleet Card Sales - Customer</label><input type="number"></div>
+                <div><label>Fleet Card Sales - Inter-Company</label><input type="number"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card denomination-table">
+            <h4>Denomination</h4>
+            <table>
+              <thead><tr><th>Denomination</th><th>Pieces</th><th>Amount</th></tr></thead>
+              <tbody>
+                <tr><td>1000</td><td></td><td></td></tr>
+                <tr><td>500</td><td></td><td></td></tr>
+                <tr><td>200</td><td></td><td></td></tr>
+                <tr><td>100</td><td></td><td></td></tr>
+                <tr><td>50</td><td></td><td></td></tr>
+                <tr><td>20</td><td></td><td></td></tr>
+                <tr><td>10</td><td></td><td></td></tr>
+                <tr><td>5</td><td></td><td></td></tr>
+                <tr><td>1</td><td></td><td></td></tr>
+                <tr><td>0.25</td><td></td><td></td></tr>
+                <tr><td><strong>Total</strong></td><td></td><td><strong></strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </form>
+    </div>
+
+   <!-- Shift Deposit Registry table -->
+    <div class="card">
+      <h3 style="margin:0 0 8px 0">Shift Deposit Registry</h3>
+      <div class="table-scroll">
+        <table id="shiftDepositTable">
+          <thead>
+            <tr><th>Date</th><th>Source</th><th>Amount</th><th>Depository Bank</th><th>Bank Account Number</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" id="shiftAdd" title="Add Row">➕</button>
+        <button class="icon-btn" id="shiftEdit" title="Edit Selected Row">✏️</button>
+        <button class="icon-btn" id="shiftDelete" title="Delete Selected Row">🗑️</button>
+        <div style="flex:1"></div>
+        <div class="muted">Total Deposit: <strong id="shiftTotal">0.00</strong></div>
+      </div>
+    </div>
+
+    <!-- Shift Collection Registry table -->
+    <div class="card">
+      <h3 style="margin:0 0 8px 0">Shift Collection Registry</h3>
+      <div class="table-scroll">
+        <table id="stationCollectionTable">
+          <thead>
+            <tr><th>Date</th><th>Customer</th><th>Purpose</th><th>Payment Type</th><th>CR/AR #</th><th>Amount</th><th>Maya Payment Ref</th><th>Check #</th><th>Check Date</th><th>Issuing Bank</th><th>Remarks</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" id="collAdd" title="Add Row">➕</button>
+        <button class="icon-btn" id="collEdit" title="Edit Selected Row">✏️</button>
+        <button class="icon-btn" id="collDelete" title="Delete Selected Row">🗑️</button>
+        <div style="flex:1"></div>
+        <div class="muted">Total Collection: <strong id="collectionTotal">0.00</strong></div>
+      </div>
+    </div>
+
+    <!-- Meter Reading table -->
+    <div class="card">
+      <h3 style="margin:0 0 8px 0">Meter Reading</h3>
+      <div class="table-scroll">
+        <table id="meterTable">
+          <thead>
+            <tr><th>Reading Date</th><th>Reading Time</th><th>Nozzle</th><th>TankRef</th><th>Product</th><th>Reading</th><th>Reading Type</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" id="meterAdd" title="Add Row">➕</button>
+        <button class="icon-btn" id="meterEdit" title="Edit Selected Row">✏️</button>
+        <button class="icon-btn" id="meterDelete" title="Delete Selected Row">🗑️</button>
+        <div style="flex:1"></div>
+        <div class="muted"><strong></strong></div>
+      </div>
+    </div>
+
+    <div style="text-align:right;margin-top:8px">
+      <button id="exportXlsx" class="secondary">Export to Excel</button>
+      <button id="saveLocal" class="secondary">Save to browser</button>
+      <button id="clearAll" class="secondary">Clear</button>
+    </div>
+  </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    const $ = s => document.querySelector(s);
+
+    function mkInput(type='text', val=''){ const ip=document.createElement('input'); ip.type=type; ip.value = val||''; ip.style.width='100%'; return ip; }
+
+    function createRowFor(tableId, values){
+      const cols = {
+        '#meterTable': ['date','text','text','text','text','number','text'],
+        '#shiftDepositTable': ['date','text','number','text','text'],
+        '#stationCollectionTable': ['date','text','text','text','text','number','text','text','date','text','text']
+      };
+      const format = cols[tableId];
+      return format.map((t,i)=> mkInput(t, values && values[i]?values[i]:''));
+    }
+
+    function addTableRow(tableId, values){
+      const tbody = document.querySelector(tableId+' tbody');
+      const tr = document.createElement('tr');
+      const inputs = createRowFor(tableId, values);
+      inputs.forEach(inp=>{ const td=document.createElement('td'); td.appendChild(inp); tr.appendChild(td); });
+      tr.addEventListener('click', ()=> selectRow(tableId, tr));
+      tbody.appendChild(tr);
+      tr.querySelectorAll('input').forEach(inp=> inp.addEventListener('input', updateTotals));
+      return tr;
+    }
+
+    function initEmptyRows(){
+      ['#shiftDepositTable','#stationCollectionTable','#meterTable'].forEach(tbl=>{
+        const tbody = document.querySelector(tbl+' tbody'); tbody.innerHTML=''; for(let i=0;i<3;i++) addTableRow(tbl, null);
+      });
+    }
+
+    let selected = {meter:null, shift:null, coll:null};
+    function clearSelection(tableId){ document.querySelectorAll(tableId+' tbody tr.selected').forEach(s=>s.classList.remove('selected')); if(tableId==='#meterTable') selected.meter=null; if(tableId==='#shiftDepositTable') selected.shift=null; if(tableId==='#stationCollectionTable') selected.coll=null; }
+    function selectRow(tableId, tr){ clearSelection(tableId); tr.classList.add('selected'); if(tableId==='#meterTable') selected.meter=tr; if(tableId==='#shiftDepositTable') selected.shift=tr; if(tableId==='#stationCollectionTable') selected.coll=tr; }
+
+    function toggleEditRow(tr){ if(!tr) return alert('Select a row first'); const inputs = tr.querySelectorAll('input'); const anyDisabled = Array.from(inputs).some(i=>i.disabled); inputs.forEach(i=> i.disabled = !anyDisabled); if(anyDisabled) inputs[0].focus(); }
+
+    $('#shiftAdd').addEventListener('click', ()=>{ const tr=addTableRow('#shiftDepositTable', null); selectRow('#shiftDepositTable', tr); updateTotals(); });
+    $('#shiftEdit').addEventListener('click', ()=> toggleEditRow(selected.shift));
+    $('#shiftDelete').addEventListener('click', ()=>{ if(!selected.shift) return alert('Select a row first'); if(confirm('Delete selected row?')) selected.shift.remove(); updateTotals(); });
+
+    $('#collAdd').addEventListener('click', ()=>{ const tr=addTableRow('#stationCollectionTable', null); selectRow('#stationCollectionTable', tr); updateTotals(); });
+    $('#collEdit').addEventListener('click', ()=> toggleEditRow(selected.coll));
+    $('#collDelete').addEventListener('click', ()=>{ if(!selected.coll) return alert('Select a row first'); if(confirm('Delete selected row?')) selected.coll.remove(); updateTotals(); });
+
+    $('#meterAdd').addEventListener('click', ()=>{ const tr=addTableRow('#meterTable', null); selectRow('#meterTable', tr); });
+    $('#meterEdit').addEventListener('click', ()=> toggleEditRow(selected.meter));
+    $('#meterDelete').addEventListener('click', ()=>{ if(!selected.meter) return alert('Select a row first'); if(confirm('Delete selected row?')) selected.meter.remove(); });
+
+    function parseNumber(v){ const n=Number(String(v||'').replace(/,/g,'')); return isNaN(n)?0:n; }
+    function updateTotals(){ let sTot=0; document.querySelectorAll('#shiftDepositTable tbody tr').forEach(tr=> sTot += parseNumber(tr.querySelectorAll('input')[4]?.value)); $('#shiftTotal').textContent=sTot.toFixed(2); let cTot=0; document.querySelectorAll('#stationCollectionTable tbody tr').forEach(tr=> cTot += parseNumber(tr.querySelectorAll('input')[7]?.value)); $('#collectionTotal').textContent=cTot.toFixed(2); }
+
+    window.addEventListener('load', initEmptyRows);
+  </script>
+
+</body>
+</html>
