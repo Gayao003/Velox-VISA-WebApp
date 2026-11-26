@@ -6,7 +6,7 @@ import { ShiftDepositRecord } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 import { ExportService } from '../services/exportService';
 import { authService } from '../core/auth/authService';
-import { formatCurrency, todayIso } from '../lib/format';
+import { formatCurrency, todayIso, getNextIncrementRef } from '../lib/format';
 import { Button } from '../core/ui/button';
 import { Input } from '../core/ui/input';
 import { Badge } from '../core/ui/badge';
@@ -82,7 +82,12 @@ export const ShiftDepositsView: React.FC = () => {
       );
       setDate(todayIso());
       setShift(lovs.shifts[0] || '1ST SHIFT');
-      setDepositSlipRef('');
+      setDepositSlipRef(
+        getNextIncrementRef(
+          'SLIP',
+          records.map((r) => r.depositSlipRef)
+        )
+      );
       setSource(lovs.sources[0] || 'Cash Sale');
       setAmount(0);
       setDepositType(lovs.depositTypes[0] || 'Cash');
@@ -115,6 +120,8 @@ export const ShiftDepositsView: React.FC = () => {
       await firestoreService.save('shift_deposits', rec);
       toast(editing ? 'Shift deposit updated' : 'Shift deposit added', 'success');
       setIsModalOpen(false);
+    } catch (err: any) {
+      toast(err?.message || 'Failed to save shift deposit', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -399,7 +406,9 @@ export const ShiftDepositsView: React.FC = () => {
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Station ID</label>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Station ID <span className="text-red-500">*</span>
+              </label>
               <select
                 value={stationId}
                 onChange={(e) => setStationId(e.target.value)}
@@ -414,11 +423,15 @@ export const ShiftDepositsView: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Date</label>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Date <span className="text-red-500">*</span>
+              </label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Shift</label>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Shift <span className="text-red-500">*</span>
+              </label>
               <select
                 value={shift}
                 onChange={(e) => setShift(e.target.value)}
@@ -436,17 +449,19 @@ export const ShiftDepositsView: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Deposit Slip Ref.
+                Deposit Slip Ref. <span className="text-red-500">*</span>
               </label>
               <Input
                 value={depositSlipRef}
                 onChange={(e) => setDepositSlipRef(e.target.value)}
-                placeholder="e.g. SLIP-000123"
+                placeholder="Auto-generated or enter slip #"
                 required
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Source</label>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Source <span className="text-red-500">*</span>
+              </label>
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
@@ -461,7 +476,7 @@ export const ShiftDepositsView: React.FC = () => {
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Deposit Type
+                Deposit Type <span className="text-red-500">*</span>
               </label>
               <select
                 value={depositType}
@@ -476,7 +491,9 @@ export const ShiftDepositsView: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Amount</label>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Amount (₱) <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="number"
                 step="0.01"
@@ -487,7 +504,7 @@ export const ShiftDepositsView: React.FC = () => {
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Depository Bank Name
+                Depository Bank Name <span className="text-red-500">*</span>
               </label>
               <Input
                 value={bankName}
@@ -498,7 +515,7 @@ export const ShiftDepositsView: React.FC = () => {
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Bank Account No.
+                Bank Account No. <span className="text-red-500">*</span>
               </label>
               <Input
                 value={bankAccountNo}

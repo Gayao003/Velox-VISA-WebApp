@@ -114,6 +114,8 @@ export const MeterReadingsView: React.FC = () => {
       await firestoreService.save('meter_readings', rec);
       toast(editing ? 'Meter reading updated' : 'Meter reading added', 'success');
       setIsModalOpen(false);
+    } catch (err: any) {
+      toast(err?.message || 'Failed to save meter reading', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -359,7 +361,9 @@ export const MeterReadingsView: React.FC = () => {
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Station ID</label>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Station ID <span className="text-red-500">*</span>
+              </label>
               <select
                 value={stationId}
                 onChange={(e) => setStationId(e.target.value)}
@@ -374,7 +378,9 @@ export const MeterReadingsView: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Shift</label>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Shift <span className="text-red-500">*</span>
+              </label>
               <select
                 value={shift}
                 onChange={(e) => setShift(e.target.value)}
@@ -389,7 +395,7 @@ export const MeterReadingsView: React.FC = () => {
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Reading Date
+                Reading Date <span className="text-red-500">*</span>
               </label>
               <Input
                 type="date"
@@ -400,7 +406,7 @@ export const MeterReadingsView: React.FC = () => {
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Reading Time
+                Reading Time <span className="text-red-500">*</span>
               </label>
               <Input
                 type="time"
@@ -410,7 +416,9 @@ export const MeterReadingsView: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Nozzle</label>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Nozzle <span className="text-red-500">*</span>
+              </label>
               <Input
                 value={nozzle}
                 onChange={(e) => setNozzle(e.target.value)}
@@ -427,7 +435,9 @@ export const MeterReadingsView: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Product</label>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Product <span className="text-red-500">*</span>
+              </label>
               <Input
                 list="visa-products"
                 value={product}
@@ -442,7 +452,7 @@ export const MeterReadingsView: React.FC = () => {
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Reading Type
+                Reading Type <span className="text-red-500">*</span>
               </label>
               <select
                 value={readingType}
@@ -458,7 +468,7 @@ export const MeterReadingsView: React.FC = () => {
             </div>
             <div className="sm:col-span-2">
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Meter Reading Value
+                Meter Reading Value <span className="text-red-500">*</span>
               </label>
               <Input
                 type="number"

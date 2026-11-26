@@ -26,6 +26,33 @@ function writeLocal<T>(col: string, items: T[]) {
   window.dispatchEvent(new CustomEvent(`visa:collection:${col}`));
 }
 
+/**
+ * Firestore rejects objects containing `undefined` values.
+ * Strip undefined keys recursively before writing.
+ */
+function stripUndefined<T>(obj: T): T {
+  if (Array.isArray(obj)) {
+    return obj.map((v) => stripUndefined(v)) as unknown as T;
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const clean: Record<string, any> = {};
+    for (const [k, v] of Object.entries(obj as Record<string, any>)) {
+      if (v !== undefined) {
+        clean[k] = stripUndefined(v);
+      }
+    }
+    return clean as T;
+  }
+  return obj;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms = 4000): Promise<T | 'timeout'> {
+  return Promise.race([
+    promise,
+    new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), ms)),
+  ]);
+}
+
 export const firestoreService = {
   isCloudEnabled(): boolean {
     return isFirebaseConfigured() && Boolean(getFirebaseDb());
@@ -41,7 +68,6 @@ export const firestoreService = {
         writeLocal(colName, list);
         return list;
       } catch {
-        // Fallback if index or field missing
         const snap = await getDocs(collection(db, colName));
         const list = snap.docs.map((d) => ({ ...d.data(), id: d.id } as T));
         writeLocal(colName, list);
@@ -72,7 +98,6 @@ export const firestoreService = {
       return unsub;
     }
 
-    // Local reactive fallback
     onData(readLocal<T>(colName));
     const handler = () => onData(readLocal<T>(colName));
     window.addEventListener(`visa:collection:${colName}`, handler);
@@ -80,16 +105,32 @@ export const firestoreService = {
   },
 
   async save<T extends { id: string }>(colName: string, item: T): Promise<T> {
+    const cleanItem = stripUndefined(item);
     const db = getFirebaseDb();
     const current = readLocal<T>(colName);
-    const idx = current.findIndex((x) => x.id === item.id);
-    const updated = idx >= 0 ? current.map((x) => (x.id === item.id ? item : x)) : [item, ...current];
+    const idx = current.findIndex((x) => x.id === cleanItem.id);
+    const updated =
+      idx >= 0
+        ? current.map((x) => (x.id === cleanItem.id ? cleanItem : x))
+        : [cleanItem, ...current];
     writeLocal(colName, updated);
 
     if (db) {
-      await setDoc(doc(db, colName, item.id), item as Record<string, any>, { merge: true });
+      try {
+        await withTimeout(
+          setDoc(doc(db, colName, cleanItem.id), cleanItem as Record<string, any>, { merge: true }),
+          4000
+        );
+      } catch (err: any) {
+        console.error(`[Firestore] Save failed on ${colName}:`, err);
+        throw new Error(
+          err?.code === 'permission-denied'
+            ? 'Firestore permission denied. Check your Firestore Security Rules in Firebase Console.'
+            : err?.message || 'Failed to save to Firestore.'
+        );
+      }
     }
-    return item;
+    return cleanItem;
   },
 
   async remove(colName: string, id: string): Promise<void> {
@@ -101,7 +142,12 @@ export const firestoreService = {
     );
 
     if (db) {
-      await deleteDoc(doc(db, colName, id));
+      try {
+        await withTimeout(deleteDoc(doc(db, colName, id)), 4000);
+      } catch (err: any) {
+        console.error(`[Firestore] Delete failed on ${colName}:`, err);
+        throw new Error(err?.message || 'Failed to delete from Firestore.');
+      }
     }
   },
 };

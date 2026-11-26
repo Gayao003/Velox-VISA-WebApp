@@ -1,12 +1,21 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FileSpreadsheet, PlusCircle, Pencil, Trash2, MapPin } from 'lucide-react';
+import {
+  FileSpreadsheet,
+  PlusCircle,
+  Pencil,
+  Trash2,
+  MapPin,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+} from 'lucide-react';
 import { VisaOutletContext } from '../core/layout/AppLayout';
 import { ShiftCollectionRecord } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 import { ExportService } from '../services/exportService';
 import { authService } from '../core/auth/authService';
-import { formatCurrency, todayIso } from '../lib/format';
+import { formatCurrency, todayIso, getNextIncrementRef } from '../lib/format';
 import { Button } from '../core/ui/button';
 import { Input } from '../core/ui/input';
 import { Badge } from '../core/ui/badge';
@@ -40,22 +49,25 @@ export const ShiftCollectionsView: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
   const [editing, setEditing] = useState<ShiftCollectionRecord | null>(null);
   const [toDelete, setToDelete] = useState<ShiftCollectionRecord | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Form fields (matching Shift Collection Registry V3.1.xlsx)
+  // Step 1 fields
   const [date, setDate] = useState(todayIso());
   const [stationId, setStationId] = useState('');
   const [shift, setShift] = useState('1ST SHIFT');
   const [customer, setCustomer] = useState('');
   const [purpose, setPurpose] = useState('Credit Payment');
+  const [amount, setAmount] = useState<number>(0);
+
+  // Step 2 fields
+  const [paymentType, setPaymentType] = useState('Cash');
   const [depositSlipRef, setDepositSlipRef] = useState('');
   const [soaRef, setSoaRef] = useState('');
-  const [paymentType, setPaymentType] = useState('Cash');
   const [crArNo, setCrArNo] = useState('');
-  const [amount, setAmount] = useState<number>(0);
   const [mayaPaymentRef, setMayaPaymentRef] = useState('');
   const [checkNo, setCheckNo] = useState('');
   const [checkDate, setCheckDate] = useState('');
@@ -71,6 +83,7 @@ export const ShiftCollectionsView: React.FC = () => {
   }, []);
 
   const openModal = (rec?: ShiftCollectionRecord) => {
+    setStep(1);
     if (rec) {
       setEditing(rec);
       setDate(rec.date);
@@ -78,11 +91,11 @@ export const ShiftCollectionsView: React.FC = () => {
       setShift(rec.shift);
       setCustomer(rec.customer);
       setPurpose(rec.purpose);
+      setAmount(rec.amount);
+      setPaymentType(rec.paymentType);
       setDepositSlipRef(rec.depositSlipRef);
       setSoaRef(rec.soaRef);
-      setPaymentType(rec.paymentType);
       setCrArNo(rec.crArNo);
-      setAmount(rec.amount);
       setMayaPaymentRef(rec.mayaPaymentRef);
       setCheckNo(rec.checkNo);
       setCheckDate(rec.checkDate);
@@ -97,11 +110,16 @@ export const ShiftCollectionsView: React.FC = () => {
       setShift(lovs.shifts[0] || '1ST SHIFT');
       setCustomer('');
       setPurpose(lovs.purposes[1] || lovs.purposes[0] || 'Credit Payment');
-      setDepositSlipRef('');
-      setSoaRef('');
-      setPaymentType(lovs.paymentTypes[0] || 'Cash');
-      setCrArNo('');
       setAmount(0);
+      setPaymentType(lovs.paymentTypes[0] || 'Cash');
+      setDepositSlipRef(
+        getNextIncrementRef(
+          'COL-SLIP',
+          records.map((r) => r.depositSlipRef)
+        )
+      );
+      setSoaRef('');
+      setCrArNo('');
       setMayaPaymentRef('');
       setCheckNo('');
       setCheckDate('');
@@ -111,8 +129,28 @@ export const ShiftCollectionsView: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleNextStep = () => {
+    if (!date || !stationId || !shift) {
+      toast('Please fill in Date, Station ID, and Shift.', 'warning');
+      return;
+    }
+    if (!customer.trim()) {
+      toast('Please select or enter a Credit Customer.', 'warning');
+      return;
+    }
+    if (!amount || Number(amount) <= 0) {
+      toast('Please enter a valid collection Amount greater than 0.', 'warning');
+      return;
+    }
+    setStep(2);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (step === 1) {
+      handleNextStep();
+      return;
+    }
     setIsSaving(true);
     try {
       const now = new Date().toISOString();
@@ -138,8 +176,10 @@ export const ShiftCollectionsView: React.FC = () => {
         updatedAt: now,
       };
       await firestoreService.save('shift_collections', rec);
-      toast(editing ? 'Collection updated' : 'Collection added', 'success');
+      toast(editing ? 'Collection updated successfully' : 'Collection saved successfully', 'success');
       setIsModalOpen(false);
+    } catch (err: any) {
+      toast(err?.message || 'Failed to save shift collection', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -152,6 +192,8 @@ export const ShiftCollectionsView: React.FC = () => {
       await firestoreService.remove('shift_collections', toDelete.id);
       toast('Collection record deleted', 'info');
       setToDelete(null);
+    } catch (err: any) {
+      toast(err?.message || 'Failed to delete collection', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -220,8 +262,6 @@ export const ShiftCollectionsView: React.FC = () => {
           <>
             <MapPin className="h-3 w-3 text-blue-600" />
             <span>Shift Collection Registry V3.1 — Customer AR, SOA & Payment Tracking</span>
-            <span>•</span>
-            <span className="font-semibold text-slate-700">{selectedStation}</span>
           </>
         }
         actions={
@@ -256,7 +296,7 @@ export const ShiftCollectionsView: React.FC = () => {
           </div>
         </div>
         <div className="text-xs text-slate-500 font-medium">
-          {lovs.creditCustomers.length} Credit Customers loaded from Master LoV
+          {lovs.creditCustomers.length} Credit Customers loaded
         </div>
       </div>
 
@@ -418,159 +458,291 @@ export const ShiftCollectionsView: React.FC = () => {
         </div>
       )}
 
+      {/* 2-Step Wizard Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editing ? 'Edit Shift Collection' : 'New Shift Collection'}
-        maxWidth="2xl"
+        maxWidth="xl"
       >
-        <form onSubmit={handleSave} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Date</label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Station ID</label>
-              <select
-                value={stationId}
-                onChange={(e) => setStationId(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
-                required
+        <form onSubmit={handleSave} className="space-y-5">
+          {/* Step Progress Indicator */}
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                step === 1
+                  ? 'bg-white text-blue-700 shadow-xs border border-blue-200'
+                  : 'text-emerald-700 hover:bg-white/60'
+              }`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full flex items-center justify-center text-[11px] font-extrabold ${
+                  step === 1 ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
+                }`}
               >
-                {lovs.stations.map((st) => (
-                  <option key={st} value={st}>
-                    {st}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Shift</label>
-              <select
-                value={shift}
-                onChange={(e) => setShift(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+                {step > 1 ? <CheckCircle2 className="h-3.5 w-3.5" /> : '1'}
+              </span>
+              <span>Station & Customer</span>
+            </button>
+
+            <div className="h-px w-6 bg-slate-300 shrink-0" />
+
+            <button
+              type="button"
+              onClick={() => {
+                if (step === 1) handleNextStep();
+              }}
+              className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                step === 2
+                  ? 'bg-white text-blue-700 shadow-xs border border-blue-200'
+                  : 'text-slate-500 hover:bg-white/60'
+              }`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full flex items-center justify-center text-[11px] font-extrabold ${
+                  step === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
+                }`}
               >
-                {lovs.shifts.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
+                2
+              </span>
+              <span>Payment & References</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Credit Customer (type to search 436+ customers)
-              </label>
-              <Input
-                list="visa-credit-customers"
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
-                placeholder="Start typing customer name..."
-                required
-              />
-              <datalist id="visa-credit-customers">
-                {lovs.creditCustomers.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
-            </div>
+          {step === 1 ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Station & Shift
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Date <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Station ID <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={stationId}
+                      onChange={(e) => setStationId(e.target.value)}
+                      className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+                      required
+                    >
+                      {lovs.stations.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Shift <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={shift}
+                      onChange={(e) => setShift(e.target.value)}
+                      className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+                    >
+                      {lovs.shifts.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Purpose</label>
-              <select
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
-              >
-                {lovs.purposes.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Payment Type
-              </label>
-              <select
-                value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
-              >
-                {lovs.paymentTypes.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Customer & Collection Amount
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Credit Customer <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      list="visa-credit-customers"
+                      value={customer}
+                      onChange={(e) => setCustomer(e.target.value)}
+                      placeholder="Start typing customer name (436+ customers)..."
+                      required
+                    />
+                    <datalist id="visa-credit-customers">
+                      {lovs.creditCustomers.map((c) => (
+                        <option key={c} value={c} />
+                      ))}
+                    </datalist>
+                  </div>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Amount</label>
-              <Input
-                type="number"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(Number(e.target.value) || 0)}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">CR/AR #</label>
-              <Input value={crArNo} onChange={(e) => setCrArNo(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Deposit Slip Ref.
-              </label>
-              <Input value={depositSlipRef} onChange={(e) => setDepositSlipRef(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">SOA Ref</label>
-              <Input value={soaRef} onChange={(e) => setSoaRef(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Maya Payment Ref
-              </label>
-              <Input value={mayaPaymentRef} onChange={(e) => setMayaPaymentRef(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Check #</label>
-              <Input value={checkNo} onChange={(e) => setCheckNo(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Check Date
-              </label>
-              <Input type="date" value={checkDate} onChange={(e) => setCheckDate(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Issuing Bank
-              </label>
-              <Input value={issuingBank} onChange={(e) => setIssuingBank(e.target.value)} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">Remarks</label>
-              <Input value={remarks} onChange={(e) => setRemarks(e.target.value)} />
-            </div>
-          </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                        Purpose <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={purpose}
+                        onChange={(e) => setPurpose(e.target.value)}
+                        className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+                      >
+                        {lovs.purposes.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                        Amount (₱) <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={amount}
+                        onChange={(e) => setAmount(Number(e.target.value) || 0)}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" isLoading={isSaving}>
-              {editing ? 'Update Collection' : 'Save Collection'}
-            </Button>
-          </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="button" variant="primary" onClick={handleNextStep} className="font-bold">
+                  <span>Next: Payment & References</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Payment & Slip References
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Payment Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={paymentType}
+                      onChange={(e) => setPaymentType(e.target.value)}
+                      className="w-full h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+                    >
+                      {lovs.paymentTypes.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Deposit Slip Ref.
+                    </label>
+                    <Input
+                      value={depositSlipRef}
+                      onChange={(e) => setDepositSlipRef(e.target.value)}
+                      placeholder="Auto-generated or enter slip #"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      CR/AR #
+                    </label>
+                    <Input value={crArNo} onChange={(e) => setCrArNo(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      SOA Ref
+                    </label>
+                    <Input value={soaRef} onChange={(e) => setSoaRef(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Digital / Check & Remarks (Optional)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Maya Payment Ref
+                    </label>
+                    <Input
+                      value={mayaPaymentRef}
+                      onChange={(e) => setMayaPaymentRef(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Check #
+                    </label>
+                    <Input value={checkNo} onChange={(e) => setCheckNo(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Check Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={checkDate}
+                      onChange={(e) => setCheckDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Issuing Bank
+                    </label>
+                    <Input
+                      value={issuingBank}
+                      onChange={(e) => setIssuingBank(e.target.value)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      Remarks
+                    </label>
+                    <Input value={remarks} onChange={(e) => setRemarks(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Back</span>
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="primary" isLoading={isSaving} className="font-bold">
+                    {editing ? 'Update Collection' : 'Save Collection'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </Modal>
 

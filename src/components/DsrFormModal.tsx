@@ -5,6 +5,7 @@ import { Input } from '../core/ui/input';
 import { DsrRecord, MasterLovConfig } from '../models/visa';
 import { todayIso, generateRefNo } from '../lib/format';
 import { authService } from '../core/auth/authService';
+import { useToast } from '../core/ui/toast';
 
 interface DsrFormModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const DsrFormModal: React.FC<DsrFormModalProps> = ({
   lovs,
 }) => {
   const currentUser = authService.getCurrentUser();
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
   const [dsrNo, setDsrNo] = useState('');
@@ -108,6 +110,8 @@ export const DsrFormModal: React.FC<DsrFormModalProps> = ({
       };
       await onSave(record);
       onClose();
+    } catch (err: any) {
+      toast(err?.message || 'Failed to save DSR', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -141,13 +145,13 @@ export const DsrFormModal: React.FC<DsrFormModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                DSR Reference No.
+                DSR Reference No. <span className="text-red-500">*</span>
               </label>
               <Input value={dsrNo} onChange={(e) => setDsrNo(e.target.value)} required />
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Station ID
+                Station ID <span className="text-red-500">*</span>
               </label>
               <select
                 value={stationId}
@@ -179,7 +183,9 @@ export const DsrFormModal: React.FC<DsrFormModalProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Date</label>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                  Date <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="date"
                   value={date}
@@ -188,7 +194,9 @@ export const DsrFormModal: React.FC<DsrFormModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Shift</label>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                  Shift <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={shift}
                   onChange={(e) => setShift(e.target.value)}
