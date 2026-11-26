@@ -7,7 +7,8 @@ import { LoginView } from './views/LoginView';
 import { DashboardView } from './views/DashboardView';
 import { ShiftDepositsView } from './views/ShiftDepositsView';
 import { ShiftCollectionsView } from './views/ShiftCollectionsView';
-import { MeterReadingsView } from './views/MeterReadingsView';
+import { BankPickupsView } from './views/BankPickupsView';
+import { VdsRegistryView } from './views/VdsRegistryView';
 
 export function App() {
   return (
@@ -22,7 +23,8 @@ export function App() {
               <Route path="/dashboard" element={<DashboardView />} />
               <Route path="/shift-deposits" element={<ShiftDepositsView />} />
               <Route path="/shift-collections" element={<ShiftCollectionsView />} />
-              <Route path="/meter-readings" element={<MeterReadingsView />} />
+              <Route path="/bank-pickups" element={<BankPickupsView />} />
+              <Route path="/vds-registry" element={<VdsRegistryView />} />
             </Route>
           </Route>
 

@@ -119,10 +119,20 @@ export const authService = {
   },
 
   async signInWithEmail(
-    email: string,
+    emailOrUsername: string,
     password: string
   ): Promise<{ success: boolean; error?: string }> {
-    const res = await signInWithEmailFirebase(email, password);
+    const idTrimmed = emailOrUsername.trim().toLowerCase();
+    // Seeded local admin account (username: admin, password: admin)
+    if ((idTrimmed === 'admin' || idTrimmed === 'admin@velox.ph') && password === 'admin') {
+      return syncUserProfileToFirestore({
+        success: true,
+        uid: 'seeded-admin',
+        email: 'admin@velox.ph',
+        displayName: 'System Administrator',
+      });
+    }
+    const res = await signInWithEmailFirebase(emailOrUsername, password);
     return syncUserProfileToFirestore(res);
   },
 

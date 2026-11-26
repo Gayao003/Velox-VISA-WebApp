@@ -31,7 +31,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-2.5 flex-wrap">
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{title}</h1>
-        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-red-50 text-[#991B1B] border border-red-200">
           {countLabel}
         </span>
       </div>

@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileSidebar }) => {
                 className="h-8 w-8 rounded-full object-cover border border-slate-200 shrink-0"
               />
             ) : (
-              <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+              <div className="h-8 w-8 rounded-full bg-[#C8102E] text-white flex items-center justify-center font-bold text-xs shrink-0">
                 {getInitials(currentUser?.fullName)}
               </div>
             )}

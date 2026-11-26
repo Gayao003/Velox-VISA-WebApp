@@ -5,8 +5,9 @@ import { VisaOutletContext } from '../core/layout/AppLayout';
 import { VdsRecord } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 import { ExportService } from '../services/exportService';
+import { useDataCache } from '../context/DataCacheContext';
 import { authService } from '../core/auth/authService';
-import { formatCurrency, todayIso, nowTimeHHMM } from '../lib/format';
+import { formatCurrency, todayIso, nowTimeHHMM, getNextIncrementRef } from '../lib/format';
 import { Button } from '../core/ui/button';
 import { Input } from '../core/ui/input';
 import { Badge } from '../core/ui/badge';
@@ -29,8 +30,8 @@ export const VdsRegistryView: React.FC = () => {
   const { toast } = useToast();
   const currentUser = authService.getCurrentUser();
 
-  const [records, setRecords] = useState<VdsRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { vdsRecords: records } = useDataCache();
+  const isLoading = false;
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [sortField, setSortField] = useState<SortField>('date');
@@ -53,14 +54,6 @@ export const VdsRegistryView: React.FC = () => {
   const [depositType, setDepositType] = useState('Cash');
   const [amount, setAmount] = useState<number>(0);
 
-  useEffect(() => {
-    setIsLoading(true);
-    return firestoreService.subscribe<VdsRecord>('vds_records', (data) => {
-      setRecords(data);
-      setIsLoading(false);
-    });
-  }, []);
-
   const openModal = (rec?: VdsRecord) => {
     if (rec) {
       setEditing(rec);
@@ -78,8 +71,18 @@ export const VdsRegistryView: React.FC = () => {
         selectedStation !== 'All Stations' ? selectedStation : lovs.stations[0] || 'VLX-ABA'
       );
       setDate(todayIso());
-      setDepositSlipRef('');
-      setVdsRefNo('');
+      setDepositSlipRef(
+        getNextIncrementRef(
+          'VDS-SLIP',
+          records.map((r) => r.depositSlipRef)
+        )
+      );
+      setVdsRefNo(
+        getNextIncrementRef(
+          'VDS',
+          records.map((r) => r.vdsRefNo)
+        )
+      );
       setDepositDate(todayIso());
       setDepositTime(nowTimeHHMM());
       setDepositType(lovs.depositTypes[0] || 'Cash');
@@ -110,6 +113,8 @@ export const VdsRegistryView: React.FC = () => {
       await firestoreService.save('vds_records', rec);
       toast(editing ? 'VDS record updated' : 'VDS record added', 'success');
       setIsModalOpen(false);
+    } catch (err: any) {
+      toast(err?.message || 'Failed to save VDS record', 'error');
     } finally {
       setIsSaving(false);
     }

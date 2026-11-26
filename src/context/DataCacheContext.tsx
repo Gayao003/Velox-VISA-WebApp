@@ -3,6 +3,8 @@ import {
   ShiftDepositRecord,
   ShiftCollectionRecord,
   MeterReadingRecord,
+  BankPickupRecord,
+  VdsRecord,
 } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 
@@ -10,6 +12,8 @@ interface DataCacheContextValue {
   deposits: ShiftDepositRecord[];
   collections: ShiftCollectionRecord[];
   meterReadings: MeterReadingRecord[];
+  bankPickups: BankPickupRecord[];
+  vdsRecords: VdsRecord[];
   isHydrated: boolean;
 }
 
@@ -25,7 +29,6 @@ function readCached<T>(col: string): T[] {
 }
 
 export const DataCacheProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Instant hydration from localStorage cache so switching pages has 0ms delay
   const [deposits, setDeposits] = useState<ShiftDepositRecord[]>(() =>
     readCached<ShiftDepositRecord>('shift_deposits')
   );
@@ -35,34 +38,39 @@ export const DataCacheProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [meterReadings, setMeterReadings] = useState<MeterReadingRecord[]>(() =>
     readCached<MeterReadingRecord>('meter_readings')
   );
-  const [isHydrated, setIsHydrated] = useState(true);
+  const [bankPickups, setBankPickups] = useState<BankPickupRecord[]>(() =>
+    readCached<BankPickupRecord>('bank_pickups')
+  );
+  const [vdsRecords, setVdsRecords] = useState<VdsRecord[]>(() =>
+    readCached<VdsRecord>('vds_records')
+  );
 
   useEffect(() => {
-    const unsubDep = firestoreService.subscribe<ShiftDepositRecord>('shift_deposits', (data) => {
-      setDeposits(data);
-      setIsHydrated(true);
-    });
+    const unsubDep = firestoreService.subscribe<ShiftDepositRecord>('shift_deposits', setDeposits);
     const unsubCol = firestoreService.subscribe<ShiftCollectionRecord>(
       'shift_collections',
-      (data) => {
-        setCollections(data);
-        setIsHydrated(true);
-      }
+      setCollections
     );
-    const unsubMtr = firestoreService.subscribe<MeterReadingRecord>('meter_readings', (data) => {
-      setMeterReadings(data);
-      setIsHydrated(true);
-    });
+    const unsubMtr = firestoreService.subscribe<MeterReadingRecord>(
+      'meter_readings',
+      setMeterReadings
+    );
+    const unsubBpk = firestoreService.subscribe<BankPickupRecord>('bank_pickups', setBankPickups);
+    const unsubVds = firestoreService.subscribe<VdsRecord>('vds_records', setVdsRecords);
 
     return () => {
       unsubDep();
       unsubCol();
       unsubMtr();
+      unsubBpk();
+      unsubVds();
     };
   }, []);
 
   return (
-    <DataCacheContext.Provider value={{ deposits, collections, meterReadings, isHydrated }}>
+    <DataCacheContext.Provider
+      value={{ deposits, collections, meterReadings, bankPickups, vdsRecords, isHydrated: true }}
+    >
       {children}
     </DataCacheContext.Provider>
   );

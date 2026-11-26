@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Fuel,
-  FileSpreadsheet,
   Landmark,
-  Truck,
+  Wallet,
+  Gauge,
   AlertCircle,
   ArrowRight,
   ChevronLeft,
@@ -25,33 +25,33 @@ import { useToast } from '../core/ui/toast';
 const VISA_SLIDES = [
   {
     id: 1,
-    badge: 'Velox Integrated Station App',
-    icon: <FileSpreadsheet className="h-3.5 w-3.5 text-blue-300" />,
-    title: 'Unified Daily Sales Report & Cash Accounting',
+    badge: 'Shift Deposit Registry',
+    icon: <Landmark className="h-3.5 w-3.5 text-blue-300" />,
+    title: 'Centralized Shift Deposit & Bank Slip Tracking',
     description:
-      'Real-time shift cash counting, denomination breakdown, cashless payments, and credit sales across all 60+ Velox stations.',
-    statValue: '60 Stations',
-    statLabel: 'Unified Station Ledger',
+      'Record shift deposits by source, deposit type, depository bank, and account number with instant Cloud Firestore sync and formatted Excel exports.',
+    image:
+      'https://images.unsplash.com/photo-1545158535-c3f7168c28b6?q=80&w=1600&auto=format&fit=crop',
   },
   {
     id: 2,
-    badge: 'Shift Deposits & Collections',
-    icon: <Landmark className="h-3.5 w-3.5 text-cyan-300" />,
-    title: 'Shift Deposit, Collection & AR Reconciliation',
+    badge: 'Shift Collection Registry',
+    icon: <Wallet className="h-3.5 w-3.5 text-cyan-300" />,
+    title: 'Structured Customer Collections & Payment Reconciliation',
     description:
-      'Track depository bank slips, customer AR/SOA payments, GCash/Maya references, and check clearances in one place.',
-    statValue: '436+ Customers',
-    statLabel: 'Pre-loaded Credit LoVs',
+      'Log credit customer payments, prepayments, SOA and CR/AR references, Maya payment refs, and check details in a guided two-step workflow.',
+    image:
+      'https://images.unsplash.com/photo-1611288875785-f62fb9b044a7?q=80&w=1600&auto=format&fit=crop',
   },
   {
     id: 3,
-    badge: 'Bank Pickup & VDS Registry',
-    icon: <Truck className="h-3.5 w-3.5 text-emerald-300" />,
-    title: 'In-Transit Pickup & VDS Settlement Tracking',
+    badge: 'Meter Reading & Analytics',
+    icon: <Gauge className="h-3.5 w-3.5 text-emerald-300" />,
+    title: 'Pump Meter Readings & Live Operations Dashboard',
     description:
-      'Monitor armored bank pickups, counted vs slip amounts, and automated business-day deposit settlement.',
-    statValue: 'Cloud Sync',
-    statLabel: 'Firebase Firestore + Offline Cache',
+      'Capture opening, mid-shift, and closing nozzle readings alongside real-time visual trends for station deposits and collections.',
+    image:
+      'https://images.unsplash.com/photo-1527018601619-a508a2be00cd?q=80&w=1600&auto=format&fit=crop',
   },
 ];
 
@@ -151,30 +151,45 @@ export const LoginView: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full flex bg-slate-50 font-sans">
-      {/* Left Showcase Panel */}
+      {/* Left Showcase Panel with Unsplash Fuel Station Photography */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-[54%] relative bg-slate-950 text-white flex-col justify-between p-10 overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 20% 20%, #2563eb 0%, transparent 45%), radial-gradient(circle at 80% 80%, #0ea5e9 0%, transparent 45%)',
-          }}
+        {/* Background Unsplash Image */}
+        <img
+          key={slide.id}
+          src={slide.image}
+          alt={slide.title}
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
         />
+        {/* Dark Velox Crimson/Slate Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1A060A] via-slate-950/80 to-[#991B1B]/45" />
 
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
-            <Fuel className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <div className="text-base font-extrabold tracking-tight">VELOX VISA</div>
-            <div className="text-[11px] text-slate-400 font-medium">
-              Velox Integrated Station App
+        {/* Top Brand Logo (Centered & Large) */}
+        <div className="relative z-10 flex justify-center pt-2">
+          {!logoError ? (
+            <img
+              src="/visa-logo.png"
+              alt="Velox VISA"
+              onError={() => setLogoError(true)}
+              className="h-20 xl:h-24 w-auto max-w-[280px] object-contain drop-shadow-xl"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-16 w-16 rounded-2xl bg-[#C8102E] border border-white/20 flex items-center justify-center shadow-xl shadow-[#C8102E]/40">
+                <Fuel className="h-8 w-8 text-white" />
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-extrabold tracking-tight">VELOX VISA</div>
+                <div className="text-xs text-slate-300 font-medium">
+                  Velox Integrated Station App
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="relative z-10 max-w-xl space-y-6 my-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-blue-200">
+        {/* Center Slide Highlight */}
+        <div className="relative z-10 max-w-xl space-y-5 my-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-xs font-semibold text-red-200">
             {slide.icon}
             <span>{slide.badge}</span>
           </div>
@@ -183,16 +198,10 @@ export const LoginView: React.FC = () => {
             {slide.title}
           </h1>
 
-          <p className="text-sm text-slate-300 leading-relaxed">{slide.description}</p>
-
-          <div className="inline-flex items-center gap-4 px-5 py-3.5 rounded-2xl bg-white/5 border border-white/10">
-            <div>
-              <div className="text-xl font-extrabold text-white">{slide.statValue}</div>
-              <div className="text-xs text-slate-400">{slide.statLabel}</div>
-            </div>
-          </div>
+          <p className="text-sm text-slate-200 leading-relaxed">{slide.description}</p>
         </div>
 
+        {/* Slide Controls */}
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {VISA_SLIDES.map((s, idx) => (
@@ -200,7 +209,7 @@ export const LoginView: React.FC = () => {
                 key={s.id}
                 onClick={() => setCurrentSlide(idx)}
                 className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  idx === currentSlide ? 'w-8 bg-blue-500' : 'w-2 bg-slate-700 hover:bg-slate-600'
+                  idx === currentSlide ? 'w-8 bg-[#C8102E]' : 'w-2 bg-white/30 hover:bg-white/50'
                 }`}
               />
             ))}
@@ -210,13 +219,13 @@ export const LoginView: React.FC = () => {
               onClick={() =>
                 setCurrentSlide((s) => (s - 1 + VISA_SLIDES.length) % VISA_SLIDES.length)
               }
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer"
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 cursor-pointer backdrop-blur-sm"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={() => setCurrentSlide((s) => (s + 1) % VISA_SLIDES.length)}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer"
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 cursor-pointer backdrop-blur-sm"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -248,7 +257,7 @@ export const LoginView: React.FC = () => {
                 : 'Sign in to VISA'}
             </h2>
             <p className="text-xs text-slate-500">
-              Velox Integrated Station App • DSR, Meter & Registry Portal
+              Velox Integrated Station App • Station Operations Portal
             </p>
           </div>
 
@@ -285,14 +294,14 @@ export const LoginView: React.FC = () => {
 
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Email Address
+                {authMode === 'signin' ? 'Username or Email' : 'Email Address'}
               </label>
               <Input
-                type="email"
+                type={authMode === 'signin' ? 'text' : 'email'}
                 icon={<Mail className="h-4 w-4" />}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="operator@velox.ph"
+                placeholder={authMode === 'signin' ? 'admin or operator@velox.ph' : 'operator@velox.ph'}
                 required
               />
             </div>
@@ -311,7 +320,7 @@ export const LoginView: React.FC = () => {
                         setErrorMessage(null);
                         setInfoMessage(null);
                       }}
-                      className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                      className="text-[11px] font-semibold text-[#C8102E] hover:underline cursor-pointer"
                     >
                       Forgot password?
                     </button>
@@ -409,7 +418,7 @@ export const LoginView: React.FC = () => {
                     setErrorMessage(null);
                     setInfoMessage(null);
                   }}
-                  className="font-bold text-blue-600 hover:underline cursor-pointer"
+                  className="font-bold text-[#C8102E] hover:underline cursor-pointer"
                 >
                   Sign up
                 </button>
@@ -424,7 +433,7 @@ export const LoginView: React.FC = () => {
                     setErrorMessage(null);
                     setInfoMessage(null);
                   }}
-                  className="font-bold text-blue-600 hover:underline cursor-pointer"
+                  className="font-bold text-[#C8102E] hover:underline cursor-pointer"
                 >
                   Back to Sign in
                 </button>

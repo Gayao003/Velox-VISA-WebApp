@@ -13,8 +13,9 @@ import { VisaOutletContext } from '../core/layout/AppLayout';
 import { BankPickupRecord, BankPickupStatus } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 import { ExportService } from '../services/exportService';
+import { useDataCache } from '../context/DataCacheContext';
 import { authService } from '../core/auth/authService';
-import { formatCurrency, todayIso, nowTimeHHMM } from '../lib/format';
+import { formatCurrency, todayIso, nowTimeHHMM, getNextIncrementRef } from '../lib/format';
 import { Button } from '../core/ui/button';
 import { Input } from '../core/ui/input';
 import { Badge } from '../core/ui/badge';
@@ -37,8 +38,8 @@ export const BankPickupsView: React.FC = () => {
   const { toast } = useToast();
   const currentUser = authService.getCurrentUser();
 
-  const [records, setRecords] = useState<BankPickupRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { bankPickups: records } = useDataCache();
+  const isLoading = false;
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortField, setSortField] = useState<SortField>('pickUpDate');
@@ -62,14 +63,6 @@ export const BankPickupsView: React.FC = () => {
   const [countedAmount, setCountedAmount] = useState<number>(0);
   const [status, setStatus] = useState<BankPickupStatus>('In-transit');
 
-  useEffect(() => {
-    setIsLoading(true);
-    return firestoreService.subscribe<BankPickupRecord>('bank_pickups', (data) => {
-      setRecords(data);
-      setIsLoading(false);
-    });
-  }, []);
-
   const openModal = (rec?: BankPickupRecord) => {
     if (rec) {
       setEditing(rec);
@@ -90,7 +83,12 @@ export const BankPickupsView: React.FC = () => {
       setPickUpDate(todayIso());
       setPickUpTime(nowTimeHHMM());
       setBankRepresentative('');
-      setDepositSlipRef('');
+      setDepositSlipRef(
+        getNextIncrementRef(
+          'BPK-SLIP',
+          records.map((r) => r.depositSlipRef)
+        )
+      );
       setDepositType(lovs.depositTypes[0] || 'Cash');
       setSlipAmount(0);
       setCountedAmount(0);
@@ -122,6 +120,8 @@ export const BankPickupsView: React.FC = () => {
       await firestoreService.save('bank_pickups', rec);
       toast(editing ? 'Bank pickup updated' : 'Bank pickup added', 'success');
       setIsModalOpen(false);
+    } catch (err: any) {
+      toast(err?.message || 'Failed to save bank pickup', 'error');
     } finally {
       setIsSaving(false);
     }

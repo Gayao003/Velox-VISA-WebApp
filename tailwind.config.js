@@ -10,10 +10,16 @@ export default {
         background: '#F8FAFC',
         surface: '#FFFFFF',
         border: '#E2E8F0',
+        velox: {
+          crimson: '#C8102E',
+          dark: '#991B1B',
+          slate: '#1E293B',
+          light: '#FEF2F2',
+        },
         primary: {
-          DEFAULT: '#2563EB',
-          hover: '#1D4ED8',
-          light: '#EFF6FF',
+          DEFAULT: '#C8102E',
+          hover: '#A30D24',
+          light: '#FEF2F2',
           foreground: '#FFFFFF',
         },
         slate: {

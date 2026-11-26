@@ -5,7 +5,8 @@ import {
   LayoutDashboard,
   Landmark,
   Wallet,
-  Gauge,
+  Truck,
+  Receipt,
   ChevronRight,
   Maximize2,
   Minimize2,
@@ -88,9 +89,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
       icon: <Wallet className="h-4 w-4 shrink-0" />,
     },
     {
-      title: 'Meter Reading',
-      path: '/meter-readings',
-      icon: <Gauge className="h-4 w-4 shrink-0" />,
+      title: 'Bank Pickup Registry',
+      path: '/bank-pickups',
+      icon: <Truck className="h-4 w-4 shrink-0" />,
+    },
+    {
+      title: 'VDS Registry',
+      path: '/vds-registry',
+      icon: <Receipt className="h-4 w-4 shrink-0" />,
     },
   ];
 
@@ -126,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
           />
         ) : (
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#991B1B] to-[#C8102E] text-white flex items-center justify-center shadow-sm shrink-0">
               <Fuel className="h-4.5 w-4.5" />
             </div>
             {isExpanded && (
@@ -166,13 +172,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
                   className={cn(
                     'flex items-center justify-between px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-all',
                     isActive
-                      ? 'bg-blue-50 text-blue-700'
+                      ? 'bg-red-50 text-[#991B1B]'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50',
                     isCollapsed && 'justify-center'
                   )}
                 >
                   <div className={cn('flex items-center gap-2.5', isCollapsed && 'justify-center')}>
-                    <span className={cn(isActive ? 'text-blue-600' : 'text-slate-500')}>
+                    <span className={cn(isActive ? 'text-[#C8102E]' : 'text-slate-500')}>
                       {item.icon}
                     </span>
                     <span
