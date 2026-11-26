@@ -5,6 +5,7 @@ import { VisaOutletContext } from '../core/layout/AppLayout';
 import { ShiftDepositRecord } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 import { ExportService } from '../services/exportService';
+import { useDataCache } from '../context/DataCacheContext';
 import { authService } from '../core/auth/authService';
 import { formatCurrency, todayIso, getNextIncrementRef } from '../lib/format';
 import { Button } from '../core/ui/button';
@@ -29,8 +30,8 @@ export const ShiftDepositsView: React.FC = () => {
   const { toast } = useToast();
   const currentUser = authService.getCurrentUser();
 
-  const [records, setRecords] = useState<ShiftDepositRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { deposits: records } = useDataCache();
+  const isLoading = false;
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [sortField, setSortField] = useState<SortField>('date');
@@ -54,14 +55,6 @@ export const ShiftDepositsView: React.FC = () => {
   const [depositType, setDepositType] = useState('Cash');
   const [bankName, setBankName] = useState('');
   const [bankAccountNo, setBankAccountNo] = useState('');
-
-  useEffect(() => {
-    setIsLoading(true);
-    return firestoreService.subscribe<ShiftDepositRecord>('shift_deposits', (data) => {
-      setRecords(data);
-      setIsLoading(false);
-    });
-  }, []);
 
   const openModal = (rec?: ShiftDepositRecord) => {
     if (rec) {
@@ -200,7 +193,7 @@ export const ShiftDepositsView: React.FC = () => {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-in fade-in duration-200">
       <PageHeader
         breadcrumb="Shift Deposits"
         title="Shift Deposit Registry"

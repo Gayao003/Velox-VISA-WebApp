@@ -4,7 +4,7 @@ import { ToastProvider } from './core/ui/toast';
 import { ProtectedRoute } from './core/auth/ProtectedRoute';
 import { AppLayout } from './core/layout/AppLayout';
 import { LoginView } from './views/LoginView';
-import { DsrListView } from './views/DsrListView';
+import { DashboardView } from './views/DashboardView';
 import { ShiftDepositsView } from './views/ShiftDepositsView';
 import { ShiftCollectionsView } from './views/ShiftCollectionsView';
 import { MeterReadingsView } from './views/MeterReadingsView';
@@ -18,15 +18,15 @@ export function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route path="/" element={<Navigate to="/dsr" replace />} />
-              <Route path="/dsr" element={<DsrListView />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardView />} />
               <Route path="/shift-deposits" element={<ShiftDepositsView />} />
               <Route path="/shift-collections" element={<ShiftCollectionsView />} />
               <Route path="/meter-readings" element={<MeterReadingsView />} />
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/dsr" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </ToastProvider>

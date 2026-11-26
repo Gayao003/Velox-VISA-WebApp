@@ -5,6 +5,7 @@ import { VisaOutletContext } from '../core/layout/AppLayout';
 import { MeterReadingRecord } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 import { ExportService } from '../services/exportService';
+import { useDataCache } from '../context/DataCacheContext';
 import { authService } from '../core/auth/authService';
 import { todayIso, nowTimeHHMM } from '../lib/format';
 import { Button } from '../core/ui/button';
@@ -29,8 +30,8 @@ export const MeterReadingsView: React.FC = () => {
   const { toast } = useToast();
   const currentUser = authService.getCurrentUser();
 
-  const [records, setRecords] = useState<MeterReadingRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { meterReadings: records } = useDataCache();
+  const isLoading = false;
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [sortField, setSortField] = useState<SortField>('readingDate');
@@ -53,14 +54,6 @@ export const MeterReadingsView: React.FC = () => {
   const [product, setProduct] = useState('Diesel');
   const [reading, setReading] = useState<number>(0);
   const [readingType, setReadingType] = useState('Opening');
-
-  useEffect(() => {
-    setIsLoading(true);
-    return firestoreService.subscribe<MeterReadingRecord>('meter_readings', (data) => {
-      setRecords(data);
-      setIsLoading(false);
-    });
-  }, []);
 
   const openModal = (rec?: MeterReadingRecord) => {
     if (rec) {
@@ -180,7 +173,7 @@ export const MeterReadingsView: React.FC = () => {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-in fade-in duration-200">
       <PageHeader
         breadcrumb="Meter Reading"
         title="Pump Meter Reading"

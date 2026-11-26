@@ -77,10 +77,10 @@ export const LoginView: React.FC = () => {
 
   useEffect(() => {
     if (authService.isAuthenticated()) {
-      navigate('/dsr', { replace: true });
+      navigate('/dashboard', { replace: true });
     }
     return authService.subscribe((session) => {
-      if (session) navigate('/dsr', { replace: true });
+      if (session) navigate('/dashboard', { replace: true });
     });
   }, [navigate]);
 
@@ -99,7 +99,7 @@ export const LoginView: React.FC = () => {
       const res = await authService.signInWithGoogle();
       if (res.success) {
         toast('Signed in with Google', 'success');
-        navigate('/dsr', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         setErrorMessage(res.error || 'Google Sign-In failed.');
       }
@@ -128,7 +128,7 @@ export const LoginView: React.FC = () => {
         const res = await authService.registerWithEmail(email, password, fullName);
         if (res.success) {
           toast('Account created & signed in', 'success');
-          navigate('/dsr', { replace: true });
+          navigate('/dashboard', { replace: true });
         } else {
           setErrorMessage(res.error || 'Registration failed.');
         }
@@ -138,7 +138,7 @@ export const LoginView: React.FC = () => {
       const res = await authService.signInWithEmail(email, password);
       if (res.success) {
         toast('Signed in successfully', 'success');
-        navigate('/dsr', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         setErrorMessage(res.error || 'Sign-in failed.');
       }

@@ -14,6 +14,7 @@ import { VisaOutletContext } from '../core/layout/AppLayout';
 import { ShiftCollectionRecord } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 import { ExportService } from '../services/exportService';
+import { useDataCache } from '../context/DataCacheContext';
 import { authService } from '../core/auth/authService';
 import { formatCurrency, todayIso, getNextIncrementRef } from '../lib/format';
 import { Button } from '../core/ui/button';
@@ -38,8 +39,8 @@ export const ShiftCollectionsView: React.FC = () => {
   const { toast } = useToast();
   const currentUser = authService.getCurrentUser();
 
-  const [records, setRecords] = useState<ShiftCollectionRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { collections: records } = useDataCache();
+  const isLoading = false;
   const [searchTerm, setSearchTerm] = useState('');
   const [purposeFilter, setPurposeFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
@@ -73,14 +74,6 @@ export const ShiftCollectionsView: React.FC = () => {
   const [checkDate, setCheckDate] = useState('');
   const [issuingBank, setIssuingBank] = useState('');
   const [remarks, setRemarks] = useState('');
-
-  useEffect(() => {
-    setIsLoading(true);
-    return firestoreService.subscribe<ShiftCollectionRecord>('shift_collections', (data) => {
-      setRecords(data);
-      setIsLoading(false);
-    });
-  }, []);
 
   const openModal = (rec?: ShiftCollectionRecord) => {
     setStep(1);
@@ -253,7 +246,7 @@ export const ShiftCollectionsView: React.FC = () => {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-in fade-in duration-200">
       <PageHeader
         breadcrumb="Shift Collections"
         title="Shift Collection Registry"

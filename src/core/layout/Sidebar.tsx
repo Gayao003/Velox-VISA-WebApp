@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  FileSpreadsheet,
+  LayoutDashboard,
   Landmark,
   Wallet,
   Gauge,
@@ -73,10 +73,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
 
   const navItems = [
     {
-      title: 'Daily Sales Report',
-      path: '/dsr',
-      icon: <FileSpreadsheet className="h-4 w-4 shrink-0" />,
-      badge: 'DSR',
+      title: 'Dashboard',
+      path: '/dashboard',
+      icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
     },
     {
       title: 'Shift Deposit Registry',
@@ -157,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
             {navItems.map((item) => {
               const isActive =
                 location.pathname === item.path ||
-                (item.path === '/dsr' && location.pathname === '/');
+                (item.path === '/dashboard' && location.pathname === '/');
               return (
                 <NavLink
                   key={item.path}
@@ -185,16 +184,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
                       {item.title}
                     </span>
                   </div>
-                  {item.badge && isExpanded && (
-                    <span
-                      className={cn(
-                        'text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0',
-                        isActive ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
-                      )}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
                 </NavLink>
               );
             })}
