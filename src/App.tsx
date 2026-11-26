@@ -9,6 +9,7 @@ import { ShiftDepositsView } from './views/ShiftDepositsView';
 import { ShiftCollectionsView } from './views/ShiftCollectionsView';
 import { BankPickupsView } from './views/BankPickupsView';
 import { VdsRegistryView } from './views/VdsRegistryView';
+import { DsrFuelSalesView } from './views/DsrFuelSalesView';
 
 export function App() {
   return (
@@ -25,6 +26,7 @@ export function App() {
               <Route path="/shift-collections" element={<ShiftCollectionsView />} />
               <Route path="/bank-pickups" element={<BankPickupsView />} />
               <Route path="/vds-registry" element={<VdsRegistryView />} />
+              <Route path="/dsr-fuel-sales" element={<DsrFuelSalesView />} />
             </Route>
           </Route>
 

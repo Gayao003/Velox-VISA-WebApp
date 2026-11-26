@@ -98,6 +98,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
       path: '/vds-registry',
       icon: <Receipt className="h-4 w-4 shrink-0" />,
     },
+    {
+      title: 'Daily Sales Report (DSR)',
+      path: '/dsr-fuel-sales',
+      icon: <Fuel className="h-4 w-4 shrink-0" />,
+    },
   ];
 
   const modeOptions: { key: SidebarMode; label: string; icon: React.ReactNode; desc: string }[] = [
@@ -123,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
         {!logoError ? (
           <img
             src="/visa-logo.png"
-            alt="VISA"
+            alt="TRACE"
             onError={() => setLogoError(true)}
             className={cn(
               'w-auto object-contain transition-all duration-200',
@@ -132,13 +137,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
           />
         ) : (
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#991B1B] to-[#C8102E] text-white flex items-center justify-center shadow-sm shrink-0">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#060771] via-[#0E4DA4] to-[#00C49A] text-white flex items-center justify-center shadow-sm shrink-0">
               <Fuel className="h-4.5 w-4.5" />
             </div>
             {isExpanded && (
               <div className="leading-tight">
-                <div className="text-sm font-extrabold tracking-tight text-slate-900">VELOX VISA</div>
-                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Station App</div>
+                <div className="text-sm font-extrabold tracking-tight text-slate-900">TRACE</div>
+                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Reconciliation Engine</div>
               </div>
             )}
           </div>
@@ -172,13 +177,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
                   className={cn(
                     'flex items-center justify-between px-2.5 py-2.5 rounded-lg text-sm font-semibold transition-all',
                     isActive
-                      ? 'bg-red-50 text-[#991B1B]'
+                      ? 'bg-blue-50 text-[#0E4DA4]'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50',
                     isCollapsed && 'justify-center'
                   )}
                 >
                   <div className={cn('flex items-center gap-2.5', isCollapsed && 'justify-center')}>
-                    <span className={cn(isActive ? 'text-[#C8102E]' : 'text-slate-500')}>
+                    <span className={cn(isActive ? 'text-[#0E4DA4]' : 'text-slate-500')}>
                       {item.icon}
                     </span>
                     <span

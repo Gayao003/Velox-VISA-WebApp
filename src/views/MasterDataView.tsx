@@ -192,7 +192,7 @@ export const MasterDataView: React.FC = () => {
         onClose={() => setIsResetOpen(false)}
         onConfirm={confirmResetDefaults}
         title="Restore Excel Defaults"
-        description="This will restore all 60 stations, 436 credit customers, and default LoVs from the original Excel templates."
+        description="This will restore the active stations (VLX-AG1, VLX-AG2), credit customers, and default LoVs."
         confirmText="Restore Defaults"
         variant="warning"
       />

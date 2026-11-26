@@ -309,7 +309,7 @@ export const UsersManagementView: React.FC = () => {
         onClose={() => setToDelete(null)}
         onConfirm={confirmDelete}
         title="Remove User"
-        description={`Remove "${toDelete?.email}" from VISA Users?`}
+        description={`Remove "${toDelete?.email}" from TRACE Users?`}
         confirmText="Remove"
         variant="danger"
       />

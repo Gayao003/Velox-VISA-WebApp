@@ -34,7 +34,7 @@ export const RegistriesView: React.FC = () => {
         <nav className="flex items-center gap-1.5 text-xs text-slate-500">
           <Home className="h-3.5 w-3.5 text-slate-400" />
           <ChevronRight className="h-3 w-3 text-slate-400" />
-          <span className="font-medium">VISA</span>
+          <span className="font-medium">TRACE</span>
           <ChevronRight className="h-3 w-3 text-slate-400" />
           <span className="font-bold text-slate-900">Station Registries</span>
         </nav>

@@ -68,7 +68,7 @@ export const VdsRegistryView: React.FC = () => {
     } else {
       setEditing(null);
       setStationId(
-        selectedStation !== 'All Stations' ? selectedStation : lovs.stations[0] || 'VLX-ABA'
+        selectedStation !== 'All Stations' ? selectedStation : lovs.stations[0] || 'VLX-AG1'
       );
       setDate(todayIso());
       setDepositSlipRef(

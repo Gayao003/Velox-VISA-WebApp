@@ -60,7 +60,7 @@ export const DsrFormModal: React.FC<DsrFormModalProps> = ({
       const st =
         defaultStation && defaultStation !== 'All Stations'
           ? defaultStation
-          : lovs.stations[0] || 'VLX-ABA';
+          : lovs.stations[0] || 'VLX-AG1';
       setDsrNo(generateRefNo('DSR'));
       setStationId(st);
       setStationName(st);

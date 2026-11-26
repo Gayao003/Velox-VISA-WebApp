@@ -7,6 +7,7 @@ import {
   MeterReadingRecord,
   BankPickupRecord,
   VdsRecord,
+  DsrFuelSaleRecord,
 } from '../models/visa';
 
 const NAVY_BG = '0F2C59';
@@ -593,6 +594,55 @@ export const ExportService = {
       rows: records,
       totalColIndex: 7,
       totalLabel: 'VDS TOTAL',
+      orientation: 'landscape',
+    });
+  },
+
+  async exportDsrFuelSales(records: DsrFuelSaleRecord[]) {
+    const netTotal = records.reduce(
+      (s, r) =>
+        s +
+        (Number(r.totalQty) || 0) * (Number(r.rate) || 0) -
+        ((Number(r.creditDisc) || 0) + (Number(r.cashDisc) || 0) + (Number(r.cashlessDisc) || 0)),
+      0
+    );
+    await buildStyledTableWorkbook({
+      sheetName: 'DSR Fuel Sales',
+      filename: `DSR_Fuel_Sales_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      title: 'VELOX INTEGRATED STATION APP (VISA)',
+      subtitle: 'DAILY SALES REPORT (DSR) — FUEL VOLUME & REVENUE',
+      metaRows: [
+        { label: 'Export Date:', value: new Date().toLocaleDateString('en-PH') },
+        { label: 'Net Fuel Sales:', value: '', highlightRed: true, numVal: netTotal, numFmt: '#,##0.00' },
+      ],
+      columns: [
+        { header: 'Station ID', align: 'center', minWidth: 12, value: (r) => r.stationId },
+        { header: 'Station', align: 'left', minWidth: 32, value: (r) => r.station },
+        { header: 'Date', align: 'center', minWidth: 12, value: (r) => r.date },
+        { header: 'Shift', align: 'center', minWidth: 12, value: (r) => r.shift },
+        { header: 'Product', align: 'left', minWidth: 16, value: (r) => r.product },
+        { header: 'Total Qty (L)', align: 'right', type: 'n', numFmt: '#,##0.000', minWidth: 14, value: (r) => r.totalQty },
+        { header: 'Credit Vol (L)', align: 'right', type: 'n', numFmt: '#,##0.000', minWidth: 14, value: (r) => r.creditVolume },
+        { header: 'Cash Vol (L)', align: 'right', type: 'n', numFmt: '#,##0.000', minWidth: 14, value: (r) => r.cashVolume },
+        { header: 'Cashless Vol (L)', align: 'right', type: 'n', numFmt: '#,##0.000', minWidth: 15, value: (r) => r.cashlessVolume },
+        { header: 'Rate', align: 'right', type: 'n', numFmt: '#,##0.00', minWidth: 11, value: (r) => r.rate },
+        { header: 'Credit Disc', align: 'right', type: 'n', numFmt: '#,##0.00', minWidth: 13, value: (r) => r.creditDisc },
+        { header: 'Cash Disc', align: 'right', type: 'n', numFmt: '#,##0.00', minWidth: 13, value: (r) => r.cashDisc },
+        { header: 'Cashless Disc', align: 'right', type: 'n', numFmt: '#,##0.00', minWidth: 14, value: (r) => r.cashlessDisc },
+        {
+          header: 'Net Sales',
+          align: 'right',
+          type: 'n',
+          numFmt: '#,##0.00',
+          minWidth: 16,
+          value: (r) =>
+            (Number(r.totalQty) || 0) * (Number(r.rate) || 0) -
+            ((Number(r.creditDisc) || 0) + (Number(r.cashDisc) || 0) + (Number(r.cashlessDisc) || 0)),
+        },
+      ],
+      rows: records,
+      totalColIndex: 13,
+      totalLabel: 'NET SALES TOTAL',
       orientation: 'landscape',
     });
   },

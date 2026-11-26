@@ -31,7 +31,7 @@ const VISA_SLIDES = [
     description:
       'Record shift deposits by source, deposit type, depository bank, and account number with instant Cloud Firestore sync and formatted Excel exports.',
     image:
-      'https://images.unsplash.com/photo-1545158535-c3f7168c28b6?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1727483892297-56448c8f1af1?q=80&w=1600&auto=format&fit=crop',
   },
   {
     id: 2,
@@ -41,7 +41,7 @@ const VISA_SLIDES = [
     description:
       'Log credit customer payments, prepayments, SOA and CR/AR references, Maya payment refs, and check details in a guided two-step workflow.',
     image:
-      'https://images.unsplash.com/photo-1611288875785-f62fb9b044a7?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1727483771218-c1cc488d020c?q=80&w=1600&auto=format&fit=crop',
   },
   {
     id: 3,
@@ -160,27 +160,27 @@ export const LoginView: React.FC = () => {
           alt={slide.title}
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
         />
-        {/* Dark Velox Crimson/Slate Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1A060A] via-slate-950/80 to-[#991B1B]/45" />
+        {/* Dark TRACE Navy/Blue Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#040B24] via-slate-950/80 to-[#0E4DA4]/45" />
 
         {/* Top Brand Logo (Centered & Large) */}
         <div className="relative z-10 flex justify-center pt-2">
           {!logoError ? (
             <img
               src="/visa-logo.png"
-              alt="Velox VISA"
+              alt="TRACE"
               onError={() => setLogoError(true)}
               className="h-20 xl:h-24 w-auto max-w-[280px] object-contain drop-shadow-xl"
             />
           ) : (
             <div className="flex flex-col items-center gap-2">
-              <div className="h-16 w-16 rounded-2xl bg-[#C8102E] border border-white/20 flex items-center justify-center shadow-xl shadow-[#C8102E]/40">
+              <div className="h-16 w-16 rounded-2xl bg-[#0E4DA4] border border-white/20 flex items-center justify-center shadow-xl shadow-[#0E4DA4]/40">
                 <Fuel className="h-8 w-8 text-white" />
               </div>
               <div className="text-center">
-                <div className="text-xl font-extrabold tracking-tight">VELOX VISA</div>
+                <div className="text-xl font-extrabold tracking-tight">TRACE</div>
                 <div className="text-xs text-slate-300 font-medium">
-                  Velox Integrated Station App
+                  Transaction Reconciliation, Assurance & Control Engine
                 </div>
               </div>
             </div>
@@ -189,7 +189,7 @@ export const LoginView: React.FC = () => {
 
         {/* Center Slide Highlight */}
         <div className="relative z-10 max-w-xl space-y-5 my-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-xs font-semibold text-red-200">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-xs font-semibold text-sky-200">
             {slide.icon}
             <span>{slide.badge}</span>
           </div>
@@ -209,7 +209,7 @@ export const LoginView: React.FC = () => {
                 key={s.id}
                 onClick={() => setCurrentSlide(idx)}
                 className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  idx === currentSlide ? 'w-8 bg-[#C8102E]' : 'w-2 bg-white/30 hover:bg-white/50'
+                  idx === currentSlide ? 'w-8 bg-[#0EA5E9]' : 'w-2 bg-white/30 hover:bg-white/50'
                 }`}
               />
             ))}
@@ -240,7 +240,7 @@ export const LoginView: React.FC = () => {
             {!logoError ? (
               <img
                 src="/visa-logo.png"
-                alt="VISA"
+                alt="TRACE"
                 onError={() => setLogoError(true)}
                 className="h-11 w-auto object-contain mb-1"
               />
@@ -251,13 +251,13 @@ export const LoginView: React.FC = () => {
             )}
             <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
               {authMode === 'signup'
-                ? 'Create VISA Account'
+                ? 'Create TRACE Account'
                 : authMode === 'forgot'
                 ? 'Reset Password'
-                : 'Sign in to VISA'}
+                : 'Sign in to TRACE'}
             </h2>
             <p className="text-xs text-slate-500">
-              Velox Integrated Station App • Station Operations Portal
+              Transaction Reconciliation, Assurance & Control Engine • Station Operations Portal
             </p>
           </div>
 
@@ -320,7 +320,7 @@ export const LoginView: React.FC = () => {
                         setErrorMessage(null);
                         setInfoMessage(null);
                       }}
-                      className="text-[11px] font-semibold text-[#C8102E] hover:underline cursor-pointer"
+                      className="text-[11px] font-semibold text-[#0E4DA4] hover:underline cursor-pointer"
                     >
                       Forgot password?
                     </button>
@@ -418,7 +418,7 @@ export const LoginView: React.FC = () => {
                     setErrorMessage(null);
                     setInfoMessage(null);
                   }}
-                  className="font-bold text-[#C8102E] hover:underline cursor-pointer"
+                  className="font-bold text-[#0E4DA4] hover:underline cursor-pointer"
                 >
                   Sign up
                 </button>
@@ -433,7 +433,7 @@ export const LoginView: React.FC = () => {
                     setErrorMessage(null);
                     setInfoMessage(null);
                   }}
-                  className="font-bold text-[#C8102E] hover:underline cursor-pointer"
+                  className="font-bold text-[#0E4DA4] hover:underline cursor-pointer"
                 >
                   Back to Sign in
                 </button>

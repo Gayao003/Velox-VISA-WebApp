@@ -71,7 +71,7 @@ export const ShiftDepositsView: React.FC = () => {
     } else {
       setEditing(null);
       setStationId(
-        selectedStation !== 'All Stations' ? selectedStation : lovs.stations[0] || 'VLX-ABA'
+        selectedStation !== 'All Stations' ? selectedStation : lovs.stations[0] || 'VLX-AG1'
       );
       setDate(todayIso());
       setShift(lovs.shifts[0] || '1ST SHIFT');

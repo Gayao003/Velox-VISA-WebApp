@@ -23,7 +23,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <nav className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
       <Home className="h-3.5 w-3.5 text-slate-400" />
       <ChevronRight className="h-3 w-3 text-slate-400" />
-      <span className="font-medium">VISA</span>
+      <span className="font-medium">TRACE</span>
       <ChevronRight className="h-3 w-3 text-slate-400" />
       <span className="font-bold text-slate-900">{breadcrumb}</span>
     </nav>
@@ -31,7 +31,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-2.5 flex-wrap">
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{title}</h1>
-        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-red-50 text-[#991B1B] border border-red-200">
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-[#0E4DA4] border border-blue-200">
           {countLabel}
         </span>
       </div>

@@ -11,15 +11,15 @@ export default {
         surface: '#FFFFFF',
         border: '#E2E8F0',
         velox: {
-          crimson: '#C8102E',
-          dark: '#991B1B',
+          crimson: '#0E4DA4',
+          dark: '#0A3573',
           slate: '#1E293B',
-          light: '#FEF2F2',
+          light: '#EFF6FF',
         },
         primary: {
-          DEFAULT: '#C8102E',
-          hover: '#A30D24',
-          light: '#FEF2F2',
+          DEFAULT: '#0E4DA4',
+          hover: '#09397D',
+          light: '#EFF6FF',
           foreground: '#FFFFFF',
         },
         slate: {

@@ -1,65 +1,7 @@
 // Auto-extracted from VISA Excel Registry Templates (LoV / LoVs sheets)
 export const DEFAULT_STATIONS: string[] = [
-  "VLX-ABA",
   "VLX-AG1",
-  "VLX-AG2",
-  "VLX-ALA",
-  "VLX-ALU",
-  "VLX-ANA",
-  "VLX-APO",
-  "VLX-AUR",
-  "VLX-B22",
-  "VLX-BAL",
-  "VLX-BAR",
-  "VLX-BAT",
-  "VLX-BLD",
-  "VLX-BNC",
-  "VLX-BRY",
-  "VLX-BUL",
-  "VLX-BYG",
-  "VLX-BYN",
-  "VLX-CAB",
-  "VLX-CAS",
-  "VLX-DAL",
-  "VLX-DAM",
-  "VLX-DAP",
-  "VLX-DIS",
-  "VLX-HAG",
-  "VLX-IGP",
-  "VLX-IPO",
-  "VLX-JRB",
-  "VLX-KAL",
-  "VLX-KAP",
-  "VLX-KAT",
-  "VLX-KIB",
-  "VLX-LAG",
-  "VLX-LGL",
-  "VLX-LIB",
-  "VLX-LUM",
-  "VLX-MAC",
-  "VLX-MAI",
-  "VLX-MAS",
-  "VLX-MHY",
-  "VLX-MLA",
-  "VLX-MOL",
-  "VLX-MTM",
-  "VLX-NAA",
-  "VLX-NCM",
-  "VLX-NPB",
-  "VLX-ODK",
-  "VLX-OLI",
-  "VLX-OSM",
-  "VLX-PAG",
-  "VLX-PAN",
-  "VLX-PQZ",
-  "VLX-SIC",
-  "VLX-SP1",
-  "VLX-SP2",
-  "VLX-SPB",
-  "VLX-SRO",
-  "VLX-STN",
-  "VLX-TAN",
-  "VLX-UPB"
+  "VLX-AG2"
 ];
 
 export const DEFAULT_SHIFTS: string[] = [
@@ -102,7 +44,7 @@ export const DEFAULT_PAYMENT_TYPES: string[] = [
 
 export const DEFAULT_READING_TYPES: string[] = ['Opening', 'Closing', 'Mid-Shift', 'Calibration'];
 
-export const DEFAULT_PRODUCTS: string[] = ['Diesel', 'Gasoline 91', 'Gasoline 95', 'Gasoline 97', 'Kerosene'];
+export const DEFAULT_PRODUCTS: string[] = ['Fuel : Diesel', 'Fuel : Premium', 'Fuel : Regular'];
 
 export const DENOMINATIONS: number[] = [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25];
 
@@ -544,3 +486,19 @@ export const DEFAULT_CREDIT_CUSTOMERS: string[] = [
   "AR TRADE- RELATED : TEAM MALACKAS C/O CAILUM-BIDDING",
   "AR TRADE- RELATED : TMTGC"
 ];
+
+export const STATION_LOCATIONS: Record<string, string> = {
+  'VLX-AG1': 'Velox Agusan 1 • CDO, MisOr',
+  'VLX-AG2': 'Velox Agusan 2 • CDO, MisOr',
+};
+
+export const STATION_DSR_NAMES: Record<string, string> = {
+  'VLX-AG1': 'Mindanao : Region X : MisOr : CDO : Agusan 1',
+  'VLX-AG2': 'Mindanao : Region X : MisOr : CDO : Agusan 2',
+};
+
+export function formatStationOption(stationId: string): string {
+  if (!stationId || stationId === 'All Stations') return 'All Stations';
+  const loc = STATION_LOCATIONS[stationId];
+  return loc ? `${stationId} — ${loc}` : stationId;
+}

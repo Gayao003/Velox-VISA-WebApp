@@ -5,7 +5,7 @@ export interface VisaUser {
   email: string;
   fullName: string;
   role: UserRole;
-  assignedStations: string[]; // ['All Stations'] or ['VLX-ABA', ...]
+  assignedStations: string[]; // ['All Stations'] or ['VLX-AG1', 'VLX-AG2']
   photoURL?: string;
   isActive: boolean;
   createdAt: string;
@@ -134,6 +134,26 @@ export interface VdsRecord {
   depositTime: string;
   depositType: string;
   amount: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DsrFuelSaleRecord {
+  id: string;
+  stationId: string;
+  station: string;
+  date: string; // YYYY-MM-DD
+  shift: string;
+  product: string;
+  totalQty: number;
+  creditVolume: number;
+  cashVolume: number;
+  cashlessVolume: number;
+  rate: number;
+  creditDisc: number;
+  cashDisc: number;
+  cashlessDisc: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

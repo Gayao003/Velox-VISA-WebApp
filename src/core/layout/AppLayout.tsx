@@ -13,6 +13,7 @@ export interface VisaOutletContext {
 
 export const AppLayout: React.FC = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [selectedStation, setSelectedStation] = useState<string>('All Stations');
   const [lovs, setLovs] = useState<MasterLovConfig>(getDefaultLovConfig);
 
   useEffect(() => {
@@ -42,10 +43,15 @@ export const AppLayout: React.FC = () => {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300">
-          <Header onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
+          <Header
+            onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+            selectedStation={selectedStation}
+            onSelectStation={setSelectedStation}
+            stations={lovs.stations}
+          />
 
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-50">
-            <Outlet context={{ selectedStation: 'All Stations', lovs } satisfies VisaOutletContext} />
+            <Outlet context={{ selectedStation, lovs } satisfies VisaOutletContext} />
           </main>
         </div>
       </div>
