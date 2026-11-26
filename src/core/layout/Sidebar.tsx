@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   FileSpreadsheet,
-  Layers,
+  Landmark,
+  Wallet,
+  Gauge,
   ChevronRight,
   Maximize2,
   Minimize2,
@@ -77,9 +79,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
       badge: 'DSR',
     },
     {
-      title: 'Station Registries',
-      path: '/registries',
-      icon: <Layers className="h-4 w-4 shrink-0" />,
+      title: 'Shift Deposit Registry',
+      path: '/shift-deposits',
+      icon: <Landmark className="h-4 w-4 shrink-0" />,
+    },
+    {
+      title: 'Shift Collection Registry',
+      path: '/shift-collections',
+      icon: <Wallet className="h-4 w-4 shrink-0" />,
+    },
+    {
+      title: 'Meter Reading',
+      path: '/meter-readings',
+      icon: <Gauge className="h-4 w-4 shrink-0" />,
     },
   ];
 

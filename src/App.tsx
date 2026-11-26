@@ -5,7 +5,9 @@ import { ProtectedRoute } from './core/auth/ProtectedRoute';
 import { AppLayout } from './core/layout/AppLayout';
 import { LoginView } from './views/LoginView';
 import { DsrListView } from './views/DsrListView';
-import { RegistriesView } from './views/RegistriesView';
+import { ShiftDepositsView } from './views/ShiftDepositsView';
+import { ShiftCollectionsView } from './views/ShiftCollectionsView';
+import { MeterReadingsView } from './views/MeterReadingsView';
 
 export function App() {
   return (
@@ -18,7 +20,9 @@ export function App() {
             <Route element={<AppLayout />}>
               <Route path="/" element={<Navigate to="/dsr" replace />} />
               <Route path="/dsr" element={<DsrListView />} />
-              <Route path="/registries" element={<RegistriesView />} />
+              <Route path="/shift-deposits" element={<ShiftDepositsView />} />
+              <Route path="/shift-collections" element={<ShiftCollectionsView />} />
+              <Route path="/meter-readings" element={<MeterReadingsView />} />
             </Route>
           </Route>
 
