@@ -393,8 +393,8 @@ export const ExportService = {
   async exportDsrList(records: DsrRecord[]) {
     await buildStyledTableWorkbook({
       sheetName: 'DSR Ledger',
-      filename: `VISA_DSR_Ledger_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      title: 'VELOX INTEGRATED STATION APP (VISA)',
+      filename: `TRACE_DSR_Ledger_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      title: 'TRACE — TRANSACTION RECONCILIATION, ASSURANCE & CONTROL ENGINE',
       subtitle: 'DAILY SALES REPORT (DSR) — CREDIT SALES LEDGER',
       metaRows: [
         { label: 'Export Date:', value: new Date().toLocaleDateString('en-PH') },
@@ -430,7 +430,7 @@ export const ExportService = {
     await buildStyledTableWorkbook({
       sheetName: 'DSR Report',
       filename: `${r.dsrNo}_${r.stationId}.xlsx`,
-      title: 'VELOX INTEGRATED STATION APP (VISA)',
+      title: 'TRACE — TRANSACTION RECONCILIATION, ASSURANCE & CONTROL ENGINE',
       subtitle: 'DAILY SALES REPORT (DSR) — STATION SUMMARY',
       metaRows: [
         { label: 'DSR No.:', value: r.dsrNo },
@@ -455,7 +455,7 @@ export const ExportService = {
     await buildStyledTableWorkbook({
       sheetName: 'Shift Deposit Registry',
       filename: `Shift_Deposit_Registry_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      title: 'VELOX INTEGRATED STATION APP (VISA)',
+      title: 'TRACE — TRANSACTION RECONCILIATION, ASSURANCE & CONTROL ENGINE',
       subtitle: 'SHIFT DEPOSIT REGISTRY V3',
       metaRows: [
         { label: 'Station ID:', value: stationFilter || 'All Stations' },
@@ -485,7 +485,7 @@ export const ExportService = {
     await buildStyledTableWorkbook({
       sheetName: 'Shift Collection Registry',
       filename: `Shift_Collection_Registry_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      title: 'VELOX INTEGRATED STATION APP (VISA)',
+      title: 'TRACE — TRANSACTION RECONCILIATION, ASSURANCE & CONTROL ENGINE',
       subtitle: 'SHIFT COLLECTION REGISTRY V3.1',
       metaRows: [
         { label: 'Export Date:', value: new Date().toLocaleDateString('en-PH') },
@@ -519,7 +519,7 @@ export const ExportService = {
     await buildStyledTableWorkbook({
       sheetName: 'Meter Reading',
       filename: `Meter_Reading_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      title: 'VELOX INTEGRATED STATION APP (VISA)',
+      title: 'TRACE — TRANSACTION RECONCILIATION, ASSURANCE & CONTROL ENGINE',
       subtitle: 'PUMP METER READING REGISTRY',
       metaRows: [
         { label: 'Export Date:', value: new Date().toLocaleDateString('en-PH') },
@@ -546,7 +546,7 @@ export const ExportService = {
     await buildStyledTableWorkbook({
       sheetName: 'Bank Pickup Registry',
       filename: `Bank_Pickup_Registry_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      title: 'VELOX INTEGRATED STATION APP (VISA)',
+      title: 'TRACE — TRANSACTION RECONCILIATION, ASSURANCE & CONTROL ENGINE',
       subtitle: 'BANK PICKUP REGISTRY V2',
       metaRows: [
         { label: 'Export Date:', value: new Date().toLocaleDateString('en-PH') },
@@ -575,7 +575,7 @@ export const ExportService = {
     await buildStyledTableWorkbook({
       sheetName: 'VDS Registry',
       filename: `VDS_Registry_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      title: 'VELOX INTEGRATED STATION APP (VISA)',
+      title: 'TRACE — TRANSACTION RECONCILIATION, ASSURANCE & CONTROL ENGINE',
       subtitle: 'VDS REGISTRY V2',
       metaRows: [
         { label: 'Export Date:', value: new Date().toLocaleDateString('en-PH') },
@@ -609,7 +609,7 @@ export const ExportService = {
     await buildStyledTableWorkbook({
       sheetName: 'DSR Fuel Sales',
       filename: `DSR_Fuel_Sales_${new Date().toISOString().slice(0, 10)}.xlsx`,
-      title: 'VELOX INTEGRATED STATION APP (VISA)',
+      title: 'TRACE — TRANSACTION RECONCILIATION, ASSURANCE & CONTROL ENGINE',
       subtitle: 'DAILY SALES REPORT (DSR) — FUEL VOLUME & REVENUE',
       metaRows: [
         { label: 'Export Date:', value: new Date().toLocaleDateString('en-PH') },
