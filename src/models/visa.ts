@@ -139,21 +139,27 @@ export interface VdsRecord {
   updatedAt: string;
 }
 
-export interface DsrFuelSaleRecord {
+export interface DsrReconcilingItem {
+  item: string;
+  amount: number;
+}
+
+export interface DsrCashReportRecord {
   id: string;
   stationId: string;
   station: string;
   date: string; // YYYY-MM-DD
   shift: string;
-  product: string;
-  totalQty: number;
-  creditVolume: number;
-  cashVolume: number;
-  cashlessVolume: number;
-  rate: number;
-  creditDisc: number;
-  cashDisc: number;
-  cashlessDisc: number;
+  cashToBeAccounted: number;
+  cashOnHand: number;
+  variance: number;
+  dateDeposited: string;
+  cashDeposited: number;
+  debit: number;
+  credit: number;
+  gcash: number;
+  paymaya: number;
+  reconcilingItems: DsrReconcilingItem[];
   createdBy: string;
   createdAt: string;
   updatedAt: string;

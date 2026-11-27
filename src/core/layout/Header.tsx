@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isCloud = firestoreService.isCloudEnabled();
 
-  const { deposits, collections, bankPickups, vdsRecords, dsrFuelSales } = useDataCache();
+  const { deposits, collections, bankPickups, vdsRecords, dsrCashReports } = useDataCache();
 
   const stationOptions = useMemo(() => {
     const set = new Set<string>(stations);
@@ -34,9 +34,9 @@ export const Header: React.FC<HeaderProps> = ({
     collections.forEach((c) => c.stationId && set.add(c.stationId));
     bankPickups.forEach((b) => b.stationId && set.add(b.stationId));
     vdsRecords.forEach((v) => v.stationId && set.add(v.stationId));
-    dsrFuelSales.forEach((f) => f.stationId && set.add(f.stationId));
+    dsrCashReports.forEach((f) => f.stationId && set.add(f.stationId));
     return Array.from(set).sort();
-  }, [deposits, collections, bankPickups, vdsRecords, dsrFuelSales, stations]);
+  }, [deposits, collections, bankPickups, vdsRecords, dsrCashReports, stations]);
 
   useEffect(() => {
     return authService.subscribe((session) => {

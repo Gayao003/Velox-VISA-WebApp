@@ -6,10 +6,11 @@ import {
   Pencil,
   Trash2,
   MapPin,
-  Fuel,
+  Plus,
+  X,
 } from 'lucide-react';
 import { VisaOutletContext } from '../core/layout/AppLayout';
-import { DsrFuelSaleRecord } from '../models/visa';
+import { DsrCashReportRecord, DsrReconcilingItem } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 import { ExportService } from '../services/exportService';
 import { useDataCache } from '../context/DataCacheContext';
@@ -31,81 +32,75 @@ import {
   SortableHead,
 } from '../components/PageShell';
 
-type SortField = 'date' | 'stationId' | 'shift' | 'product' | 'totalQty' | 'rate' | 'netSales';
+type SortField =
+  | 'date'
+  | 'stationId'
+  | 'shift'
+  | 'cashToBeAccounted'
+  | 'cashOnHand'
+  | 'variance'
+  | 'cashless';
 
-const formatLiters = (val: number) =>
-  Number(val || 0).toLocaleString('en-PH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 3,
-  });
+const sumCashless = (r: { debit: number; credit: number; gcash: number; paymaya: number }) =>
+  (Number(r.debit) || 0) +
+  (Number(r.credit) || 0) +
+  (Number(r.gcash) || 0) +
+  (Number(r.paymaya) || 0);
 
-const calcNetSales = (r: {
-  totalQty: number;
-  rate: number;
-  creditDisc: number;
-  cashDisc: number;
-  cashlessDisc: number;
-}) =>
-  (Number(r.totalQty) || 0) * (Number(r.rate) || 0) -
-  ((Number(r.creditDisc) || 0) + (Number(r.cashDisc) || 0) + (Number(r.cashlessDisc) || 0));
+const sumReconciling = (items?: DsrReconcilingItem[]) =>
+  (items || []).reduce((s, x) => s + (Number(x.amount) || 0), 0);
 
 export const DsrFuelSalesView: React.FC = () => {
   const { selectedStation, lovs } = useOutletContext<VisaOutletContext>();
   const { toast } = useToast();
   const currentUser = authService.getCurrentUser();
 
-  const { dsrFuelSales: records } = useDataCache();
+  const { dsrCashReports: records } = useDataCache();
   const [searchTerm, setSearchTerm] = useState('');
-  const [productFilter, setProductFilter] = useState('all');
   const [shiftFilter, setShiftFilter] = useState('all');
+  const [reconcileFilter, setReconcileFilter] = useState<'all' | 'with_items' | 'variance'>('all');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editing, setEditing] = useState<DsrFuelSaleRecord | null>(null);
-  const [toDelete, setToDelete] = useState<DsrFuelSaleRecord | null>(null);
+  const [editing, setEditing] = useState<DsrCashReportRecord | null>(null);
+  const [toDelete, setToDelete] = useState<DsrCashReportRecord | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Form state matching AGU1_DSR / AGU2-DSR Excel schema
+  // Form state matching VISA Load Files Update 2.0/DSR schema
   const [stationId, setStationId] = useState('VLX-AG1');
   const [station, setStation] = useState(STATION_DSR_NAMES['VLX-AG1'] || '');
   const [date, setDate] = useState(todayIso());
   const [shift, setShift] = useState('1ST SHIFT');
-  const [product, setProduct] = useState('Fuel : Diesel');
-  const [totalQty, setTotalQty] = useState<number>(0);
-  const [creditVolume, setCreditVolume] = useState<number>(0);
-  const [cashVolume, setCashVolume] = useState<number>(0);
-  const [cashlessVolume, setCashlessVolume] = useState<number>(0);
-  const [rate, setRate] = useState<number>(0);
-  const [creditDisc, setCreditDisc] = useState<number>(0);
-  const [cashDisc, setCashDisc] = useState<number>(0);
-  const [cashlessDisc, setCashlessDisc] = useState<number>(0);
+  const [cashToBeAccounted, setCashToBeAccounted] = useState<number>(0);
+  const [cashOnHand, setCashOnHand] = useState<number>(0);
+  const [dateDeposited, setDateDeposited] = useState('');
+  const [cashDeposited, setCashDeposited] = useState<number>(0);
+  const [debit, setDebit] = useState<number>(0);
+  const [credit, setCredit] = useState<number>(0);
+  const [gcash, setGcash] = useState<number>(0);
+  const [paymaya, setPaymaya] = useState<number>(0);
+  const [reconcilingItems, setReconcilingItems] = useState<DsrReconcilingItem[]>([]);
 
-  const productOptions = useMemo(() => {
-    const set = new Set<string>(lovs.products);
-    records.forEach((r) => r.product && set.add(r.product));
-    return Array.from(set);
-  }, [lovs.products, records]);
-
-  const openModal = (rec?: DsrFuelSaleRecord) => {
+  const openModal = (rec?: DsrCashReportRecord) => {
     if (rec) {
       setEditing(rec);
       setStationId(rec.stationId);
       setStation(rec.station || STATION_DSR_NAMES[rec.stationId] || rec.stationId);
       setDate(rec.date);
       setShift(rec.shift);
-      setProduct(rec.product);
-      setTotalQty(rec.totalQty);
-      setCreditVolume(rec.creditVolume);
-      setCashVolume(rec.cashVolume);
-      setCashlessVolume(rec.cashlessVolume);
-      setRate(rec.rate);
-      setCreditDisc(rec.creditDisc);
-      setCashDisc(rec.cashDisc);
-      setCashlessDisc(rec.cashlessDisc);
+      setCashToBeAccounted(rec.cashToBeAccounted);
+      setCashOnHand(rec.cashOnHand);
+      setDateDeposited(rec.dateDeposited || '');
+      setCashDeposited(rec.cashDeposited || 0);
+      setDebit(rec.debit || 0);
+      setCredit(rec.credit || 0);
+      setGcash(rec.gcash || 0);
+      setPaymaya(rec.paymaya || 0);
+      setReconcilingItems(rec.reconcilingItems ? [...rec.reconcilingItems] : []);
     } else {
       const defaultSt =
         selectedStation !== 'All Stations' ? selectedStation : lovs.stations[0] || 'VLX-AG1';
@@ -114,15 +109,15 @@ export const DsrFuelSalesView: React.FC = () => {
       setStation(STATION_DSR_NAMES[defaultSt] || defaultSt);
       setDate(todayIso());
       setShift(lovs.shifts[0] || '1ST SHIFT');
-      setProduct(productOptions[0] || 'Fuel : Diesel');
-      setTotalQty(0);
-      setCreditVolume(0);
-      setCashVolume(0);
-      setCashlessVolume(0);
-      setRate(0);
-      setCreditDisc(0);
-      setCashDisc(0);
-      setCashlessDisc(0);
+      setCashToBeAccounted(0);
+      setCashOnHand(0);
+      setDateDeposited('');
+      setCashDeposited(0);
+      setDebit(0);
+      setCredit(0);
+      setGcash(0);
+      setPaymaya(0);
+      setReconcilingItems([]);
     }
     setIsModalOpen(true);
   };
@@ -132,50 +127,53 @@ export const DsrFuelSalesView: React.FC = () => {
     setStation(STATION_DSR_NAMES[newSt] || newSt);
   };
 
-  const handleVolumeChange = (
-    field: 'credit' | 'cash' | 'cashless',
-    val: number
-  ) => {
-    const nextCredit = field === 'credit' ? val : creditVolume;
-    const nextCash = field === 'cash' ? val : cashVolume;
-    const nextCashless = field === 'cashless' ? val : cashlessVolume;
-    if (field === 'credit') setCreditVolume(val);
-    if (field === 'cash') setCashVolume(val);
-    if (field === 'cashless') setCashlessVolume(val);
-    setTotalQty(
-      Number(((Number(nextCredit) || 0) + (Number(nextCash) || 0) + (Number(nextCashless) || 0)).toFixed(3))
+  const addReconcilingRow = () =>
+    setReconcilingItems((prev) => [...prev, { item: '', amount: 0 }]);
+
+  const updateReconcilingRow = (idx: number, patch: Partial<DsrReconcilingItem>) =>
+    setReconcilingItems((prev) =>
+      prev.map((row, i) => (i === idx ? { ...row, ...patch } : row))
     );
-  };
+
+  const removeReconcilingRow = (idx: number) =>
+    setReconcilingItems((prev) => prev.filter((_, i) => i !== idx));
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
       const now = new Date().toISOString();
-      const rec: DsrFuelSaleRecord = {
+      const cta = Number(cashToBeAccounted) || 0;
+      const coh = Number(cashOnHand) || 0;
+      const cleanItems = reconcilingItems
+        .filter((x) => x.item.trim() !== '' || Number(x.amount) !== 0)
+        .map((x) => ({ item: x.item.trim(), amount: Number(x.amount) || 0 }));
+
+      const rec: DsrCashReportRecord = {
         id: editing?.id || `dsr_${Date.now()}`,
         stationId,
         station: station.trim() || STATION_DSR_NAMES[stationId] || stationId,
         date,
         shift,
-        product: product.trim(),
-        totalQty: Number(totalQty) || 0,
-        creditVolume: Number(creditVolume) || 0,
-        cashVolume: Number(cashVolume) || 0,
-        cashlessVolume: Number(cashlessVolume) || 0,
-        rate: Number(rate) || 0,
-        creditDisc: Number(creditDisc) || 0,
-        cashDisc: Number(cashDisc) || 0,
-        cashlessDisc: Number(cashlessDisc) || 0,
+        cashToBeAccounted: cta,
+        cashOnHand: coh,
+        variance: Number((coh - cta).toFixed(2)),
+        dateDeposited: dateDeposited.trim(),
+        cashDeposited: Number(cashDeposited) || 0,
+        debit: Number(debit) || 0,
+        credit: Number(credit) || 0,
+        gcash: Number(gcash) || 0,
+        paymaya: Number(paymaya) || 0,
+        reconcilingItems: cleanItems,
         createdBy: editing?.createdBy || currentUser?.fullName || 'Operator',
         createdAt: editing?.createdAt || now,
         updatedAt: now,
       };
-      await firestoreService.save('dsr_fuel_sales', rec);
-      toast(editing ? 'DSR fuel entry updated' : 'DSR fuel entry added', 'success');
+      await firestoreService.save('dsr_cash_reports', rec);
+      toast(editing ? 'DSR record updated' : 'DSR record added', 'success');
       setIsModalOpen(false);
     } catch (err: any) {
-      toast(err?.message || 'Failed to save DSR fuel entry', 'error');
+      toast(err?.message || 'Failed to save DSR record', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -185,8 +183,8 @@ export const DsrFuelSalesView: React.FC = () => {
     if (!toDelete) return;
     setIsDeleting(true);
     try {
-      await firestoreService.remove('dsr_fuel_sales', toDelete.id);
-      toast('DSR fuel entry deleted', 'info');
+      await firestoreService.remove('dsr_cash_reports', toDelete.id);
+      toast('DSR record deleted', 'info');
       setToDelete(null);
     } finally {
       setIsDeleting(false);
@@ -205,16 +203,19 @@ export const DsrFuelSalesView: React.FC = () => {
     const q = searchTerm.toLowerCase();
     const list = records.filter((r) => {
       const matchStation = selectedStation === 'All Stations' || r.stationId === selectedStation;
-      const matchProduct = productFilter === 'all' || r.product === productFilter;
       const matchShift = shiftFilter === 'all' || r.shift === shiftFilter;
+      const matchReconcile =
+        reconcileFilter === 'all' ||
+        (reconcileFilter === 'with_items' && (r.reconcilingItems || []).length > 0) ||
+        (reconcileFilter === 'variance' && Math.abs(Number(r.variance) || 0) >= 0.01);
       const matchSearch =
         !q ||
         r.stationId.toLowerCase().includes(q) ||
         r.station.toLowerCase().includes(q) ||
-        r.product.toLowerCase().includes(q) ||
         r.shift.toLowerCase().includes(q) ||
-        r.date.toLowerCase().includes(q);
-      return matchStation && matchProduct && matchShift && matchSearch;
+        r.date.toLowerCase().includes(q) ||
+        (r.reconcilingItems || []).some((x) => x.item.toLowerCase().includes(q));
+      return matchStation && matchShift && matchReconcile && matchSearch;
     });
 
     list.sort((a, b) => {
@@ -222,10 +223,10 @@ export const DsrFuelSalesView: React.FC = () => {
       switch (sortField) {
         case 'stationId': cmp = a.stationId.localeCompare(b.stationId); break;
         case 'shift': cmp = a.shift.localeCompare(b.shift); break;
-        case 'product': cmp = a.product.localeCompare(b.product); break;
-        case 'totalQty': cmp = a.totalQty - b.totalQty; break;
-        case 'rate': cmp = a.rate - b.rate; break;
-        case 'netSales': cmp = calcNetSales(a) - calcNetSales(b); break;
+        case 'cashToBeAccounted': cmp = a.cashToBeAccounted - b.cashToBeAccounted; break;
+        case 'cashOnHand': cmp = a.cashOnHand - b.cashOnHand; break;
+        case 'variance': cmp = a.variance - b.variance; break;
+        case 'cashless': cmp = sumCashless(a) - sumCashless(b); break;
         case 'date':
         default:
           cmp = (a.date || '').localeCompare(b.date || '') || a.shift.localeCompare(b.shift);
@@ -234,7 +235,7 @@ export const DsrFuelSalesView: React.FC = () => {
       return sortOrder === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [records, selectedStation, productFilter, shiftFilter, searchTerm, sortField, sortOrder]);
+  }, [records, selectedStation, shiftFilter, reconcileFilter, searchTerm, sortField, sortOrder]);
 
   const totalEntries = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
@@ -247,43 +248,45 @@ export const DsrFuelSalesView: React.FC = () => {
   const summary = useMemo(
     () =>
       filtered.reduce(
-        (acc, r) => {
-          const disc =
-            (Number(r.creditDisc) || 0) +
-            (Number(r.cashDisc) || 0) +
-            (Number(r.cashlessDisc) || 0);
-          return {
-            totalQty: acc.totalQty + (Number(r.totalQty) || 0),
-            creditVol: acc.creditVol + (Number(r.creditVolume) || 0),
-            cashVol: acc.cashVol + (Number(r.cashVolume) || 0),
-            cashlessVol: acc.cashlessVol + (Number(r.cashlessVolume) || 0),
-            totalDisc: acc.totalDisc + disc,
-            netSales: acc.netSales + calcNetSales(r),
-          };
-        },
-        { totalQty: 0, creditVol: 0, cashVol: 0, cashlessVol: 0, totalDisc: 0, netSales: 0 }
+        (acc, r) => ({
+          cashToBeAccounted: acc.cashToBeAccounted + (Number(r.cashToBeAccounted) || 0),
+          cashOnHand: acc.cashOnHand + (Number(r.cashOnHand) || 0),
+          variance: acc.variance + (Number(r.variance) || 0),
+          debit: acc.debit + (Number(r.debit) || 0),
+          credit: acc.credit + (Number(r.credit) || 0),
+          gcash: acc.gcash + (Number(r.gcash) || 0),
+          paymaya: acc.paymaya + (Number(r.paymaya) || 0),
+          reconcilingTotal: acc.reconcilingTotal + sumReconciling(r.reconcilingItems),
+          reconcilingCount: acc.reconcilingCount + (r.reconcilingItems || []).length,
+        }),
+        {
+          cashToBeAccounted: 0,
+          cashOnHand: 0,
+          variance: 0,
+          debit: 0,
+          credit: 0,
+          gcash: 0,
+          paymaya: 0,
+          reconcilingTotal: 0,
+          reconcilingCount: 0,
+        }
       ),
     [filtered]
   );
 
-  const liveModalNetSales = calcNetSales({
-    totalQty,
-    rate,
-    creditDisc,
-    cashDisc,
-    cashlessDisc,
-  });
+  const totalCashless = summary.debit + summary.credit + summary.gcash + summary.paymaya;
+  const liveVariance = (Number(cashOnHand) || 0) - (Number(cashToBeAccounted) || 0);
 
   return (
     <div className="space-y-5">
       <PageHeader
-        breadcrumb="DSR Fuel Sales"
+        breadcrumb="DSR Cash Consolidated"
         title="Daily Sales Report (DSR)"
-        countLabel={`${totalEntries} ${totalEntries === 1 ? 'Entry' : 'Entries'}`}
+        countLabel={`${totalEntries} ${totalEntries === 1 ? 'Shift' : 'Shifts'}`}
         subtitle={
           <>
             <MapPin className="h-3 w-3 text-blue-600" />
-            <span>Shift Fuel Volume, Rate & Discount Breakdown</span>
+            <span>Cash Consolidated — Cash Accounting, Cashless Tenders & Reconciling Items</span>
             <span>•</span>
             <span className="font-semibold text-slate-700">{selectedStation}</span>
           </>
@@ -294,8 +297,8 @@ export const DsrFuelSalesView: React.FC = () => {
               variant="outline"
               size="md"
               onClick={() => {
-                ExportService.exportDsrFuelSales(filtered);
-                toast('Exported DSR Fuel Sales to Excel', 'success');
+                ExportService.exportDsrCashReports(filtered);
+                toast('Exported DSR Cash Consolidated to Excel', 'success');
               }}
               className="font-semibold"
             >
@@ -314,37 +317,57 @@ export const DsrFuelSalesView: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-card">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Net Fuel Sales
+            Cash on Hand
           </div>
           <div className="text-2xl font-extrabold text-[#0E4DA4] mt-0.5 font-mono">
-            ₱{formatCurrency(summary.netSales)}
+            ₱{formatCurrency(summary.cashOnHand)}
+          </div>
+          <div className="text-[11px] text-slate-500 font-mono mt-1">
+            Expected: ₱{formatCurrency(summary.cashToBeAccounted)}
           </div>
         </div>
+
         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-card">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Total Volume Sold
+            Net Over / Short Variance
           </div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-0.5 font-mono">
-            {formatLiters(summary.totalQty)} L
+          <div
+            className={`text-2xl font-extrabold mt-0.5 font-mono ${
+              summary.variance < 0
+                ? 'text-red-600'
+                : summary.variance > 0
+                ? 'text-emerald-600'
+                : 'text-slate-800'
+            }`}
+          >
+            {summary.variance >= 0 ? '+' : ''}₱{formatCurrency(summary.variance)}
+          </div>
+          <div className="text-[11px] text-slate-500 mt-1">
+            Cash on Hand − Cash to be Accounted
           </div>
         </div>
+
         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-card">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Cash / Credit / Cashless (L)
+            Cashless Payments
           </div>
-          <div className="text-xs font-bold text-slate-700 mt-1.5 font-mono space-y-0.5">
-            <div>
-              Cash: {formatLiters(summary.cashVol)} • Credit: {formatLiters(summary.creditVol)}
-            </div>
-            <div className="text-sky-700">Cashless: {formatLiters(summary.cashlessVol)} L</div>
+          <div className="text-2xl font-extrabold text-sky-700 mt-0.5 font-mono">
+            ₱{formatCurrency(totalCashless)}
+          </div>
+          <div className="text-[11px] text-slate-500 font-mono mt-1 truncate">
+            GCash ₱{formatCurrency(summary.gcash)} • PayMaya ₱{formatCurrency(summary.paymaya)}
           </div>
         </div>
+
         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-card">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Total Discounts
+            Reconciling Items ({summary.reconcilingCount})
           </div>
           <div className="text-2xl font-extrabold text-amber-600 mt-0.5 font-mono">
-            ₱{formatCurrency(summary.totalDisc)}
+            ₱{formatCurrency(summary.reconcilingTotal)}
+          </div>
+          <div className="text-[11px] text-slate-500 font-mono mt-1 truncate">
+            Debit ₱{formatCurrency(summary.debit)} • Credit ₱{formatCurrency(summary.credit)}
           </div>
         </div>
       </div>
@@ -355,7 +378,7 @@ export const DsrFuelSalesView: React.FC = () => {
           setSearchTerm(v);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search by Station, Product, Shift, or Date..."
+        searchPlaceholder="Search by Station, Date, Shift, or Reconciling Item..."
         pageSize={pageSize}
         onPageSizeChange={(n) => {
           setPageSize(n);
@@ -363,21 +386,6 @@ export const DsrFuelSalesView: React.FC = () => {
         }}
         filters={
           <div className="flex items-center gap-2">
-            <select
-              value={productFilter}
-              onChange={(e) => {
-                setProductFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 cursor-pointer"
-            >
-              <option value="all">All Products</option>
-              {productOptions.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
             <select
               value={shiftFilter}
               onChange={(e) => {
@@ -393,14 +401,26 @@ export const DsrFuelSalesView: React.FC = () => {
                 </option>
               ))}
             </select>
+            <select
+              value={reconcileFilter}
+              onChange={(e) => {
+                setReconcileFilter(e.target.value as 'all' | 'with_items' | 'variance');
+                setCurrentPage(1);
+              }}
+              className="h-9 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 cursor-pointer"
+            >
+              <option value="all">All Records</option>
+              <option value="with_items">With Reconciling Items</option>
+              <option value="variance">With Variance</option>
+            </select>
           </div>
         }
       />
 
       {filtered.length === 0 ? (
         <EmptyState
-          title="No DSR Fuel Sales Found"
-          description="Add a shift fuel sales entry or run `npm run seed` to load AGU1_DSR / AGU2-DSR."
+          title="No DSR Records Found"
+          description="Add a DSR shift record or run `npm run seed` to load VISA Load Files Update 2.0/DSR."
           actionLabel="Add DSR Entry"
           onAction={() => openModal()}
         />
@@ -418,47 +438,42 @@ export const DsrFuelSalesView: React.FC = () => {
                 <SortableHead field="shift" activeField={sortField} onSort={handleSort}>
                   Shift
                 </SortableHead>
-                <SortableHead field="product" activeField={sortField} onSort={handleSort}>
-                  Product
-                </SortableHead>
                 <SortableHead
-                  field="totalQty"
+                  field="cashToBeAccounted"
                   activeField={sortField}
                   onSort={handleSort}
                   className="text-right"
                 >
-                  Total Qty (L)
+                  Cash to Account
                 </SortableHead>
-                <TableHead className="text-right">Credit Vol</TableHead>
-                <TableHead className="text-right">Cash Vol</TableHead>
-                <TableHead className="text-right">Cashless Vol</TableHead>
                 <SortableHead
-                  field="rate"
+                  field="cashOnHand"
                   activeField={sortField}
                   onSort={handleSort}
                   className="text-right"
                 >
-                  Rate
+                  Cash on Hand
                 </SortableHead>
-                <TableHead className="text-right">Discounts</TableHead>
                 <SortableHead
-                  field="netSales"
+                  field="variance"
                   activeField={sortField}
                   onSort={handleSort}
                   className="text-right"
                 >
-                  Net Sales
+                  Variance
                 </SortableHead>
+                <TableHead className="text-right">Debit</TableHead>
+                <TableHead className="text-right">Credit</TableHead>
+                <TableHead className="text-right">GCash</TableHead>
+                <TableHead className="text-right">PayMaya</TableHead>
+                <TableHead>Reconciling Items</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginated.map((r) => {
-                const totalDisc =
-                  (Number(r.creditDisc) || 0) +
-                  (Number(r.cashDisc) || 0) +
-                  (Number(r.cashlessDisc) || 0);
-                const netSales = calcNetSales(r);
+                const recSum = sumReconciling(r.reconcilingItems);
+                const recCount = (r.reconcilingItems || []).length;
                 return (
                   <TableRow key={r.id}>
                     <TableCell className="text-xs font-semibold text-slate-800 whitespace-nowrap">
@@ -470,32 +485,55 @@ export const DsrFuelSalesView: React.FC = () => {
                     <TableCell className="text-xs font-medium text-slate-600 whitespace-nowrap">
                       {r.shift}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="info" className="gap-1">
-                        <Fuel className="h-3 w-3" />
-                        {r.product}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs font-bold text-slate-900">
-                      {formatLiters(r.totalQty)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-slate-600">
-                      {formatLiters(r.creditVolume)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-slate-600">
-                      {formatLiters(r.cashVolume)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-slate-600">
-                      {formatLiters(r.cashlessVolume)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs font-semibold text-slate-800">
-                      ₱{formatCurrency(r.rate)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-amber-700">
-                      ₱{formatCurrency(totalDisc)}
+                    <TableCell className="text-right font-mono text-xs text-slate-700">
+                      ₱{formatCurrency(r.cashToBeAccounted)}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm font-extrabold text-[#0E4DA4]">
-                      ₱{formatCurrency(netSales)}
+                      ₱{formatCurrency(r.cashOnHand)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs font-bold">
+                      <Badge
+                        variant={
+                          r.variance < -0.01
+                            ? 'danger'
+                            : r.variance > 0.01
+                            ? 'success'
+                            : 'secondary'
+                        }
+                      >
+                        {r.variance >= 0 ? '+' : ''}₱{formatCurrency(r.variance)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-slate-600">
+                      ₱{formatCurrency(r.debit)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-slate-600">
+                      ₱{formatCurrency(r.credit)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-slate-600">
+                      ₱{formatCurrency(r.gcash)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-slate-600">
+                      ₱{formatCurrency(r.paymaya)}
+                    </TableCell>
+                    <TableCell className="max-w-[220px]">
+                      {recCount === 0 ? (
+                        <span className="text-xs text-slate-400">—</span>
+                      ) : (
+                        <div className="space-y-0.5">
+                          <Badge variant="warning" className="font-mono">
+                            {recCount} item(s) • ₱{formatCurrency(recSum)}
+                          </Badge>
+                          <div
+                            className="text-[11px] text-slate-500 truncate"
+                            title={r.reconcilingItems
+                              .map((x) => `${x.item}: ₱${formatCurrency(x.amount)}`)
+                              .join('\n')}
+                          >
+                            {r.reconcilingItems[0]?.item}
+                          </div>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex items-center gap-1">
@@ -535,7 +573,7 @@ export const DsrFuelSalesView: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editing ? 'Edit DSR Fuel Entry' : 'Add DSR Fuel Entry'}
+        title={editing ? 'Edit DSR Cash Report' : 'Add DSR Cash Report'}
         maxWidth="2xl"
       >
         <form onSubmit={handleSave} className="space-y-4">
@@ -559,7 +597,7 @@ export const DsrFuelSalesView: React.FC = () => {
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                Station Name / Location <span className="text-red-500">*</span>
+                Station Name <span className="text-red-500">*</span>
               </label>
               <Input
                 value={station}
@@ -574,156 +612,184 @@ export const DsrFuelSalesView: React.FC = () => {
               </label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Shift <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={shift}
-                  onChange={(e) => setShift(e.target.value)}
-                  required
-                  className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm"
-                >
-                  {lovs.shifts.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Product <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={product}
-                  onChange={(e) => setProduct(e.target.value)}
-                  required
-                  className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm"
-                >
-                  {productOptions.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                Shift <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={shift}
+                onChange={(e) => setShift(e.target.value)}
+                required
+                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm"
+              >
+                {lovs.shifts.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {/* Volumes */}
+          {/* Cash Accounting & Deposit */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Volume Breakdown (Liters)
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Cash Accounting & Deposit
+              </span>
+              <span
+                className={`text-xs font-mono font-bold ${
+                  liveVariance < -0.01
+                    ? 'text-red-600'
+                    : liveVariance > 0.01
+                    ? 'text-emerald-600'
+                    : 'text-slate-600'
+                }`}
+              >
+                Variance: {liveVariance >= 0 ? '+' : ''}₱{formatCurrency(liveVariance)}
+              </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Credit Volume
-                </label>
-                <Input
-                  type="number"
-                  step="0.001"
-                  value={creditVolume}
-                  onChange={(e) => handleVolumeChange('credit', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Cash Volume
-                </label>
-                <Input
-                  type="number"
-                  step="0.001"
-                  value={cashVolume}
-                  onChange={(e) => handleVolumeChange('cash', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Cashless Volume
-                </label>
-                <Input
-                  type="number"
-                  step="0.001"
-                  value={cashlessVolume}
-                  onChange={(e) => handleVolumeChange('cashless', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  Total Qty (L) <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="number"
-                  step="0.001"
-                  value={totalQty}
-                  onChange={(e) => setTotalQty(parseFloat(e.target.value) || 0)}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Rate & Discounts */}
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Rate & Discounts (₱)
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  Rate (₱/L) <span className="text-red-500">*</span>
+                  Cash to be Accounted (₱)
                 </label>
                 <Input
                   type="number"
                   step="0.01"
-                  value={rate}
-                  onChange={(e) => setRate(parseFloat(e.target.value) || 0)}
+                  value={cashToBeAccounted}
+                  onChange={(e) => setCashToBeAccounted(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  Cash on Hand (₱) <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={cashOnHand}
+                  onChange={(e) => setCashOnHand(parseFloat(e.target.value) || 0)}
                   required
                 />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Credit Disc (₱)
+                  Date Deposited
                 </label>
                 <Input
-                  type="number"
-                  step="0.001"
-                  value={creditDisc}
-                  onChange={(e) => setCreditDisc(parseFloat(e.target.value) || 0)}
+                  type="date"
+                  value={dateDeposited}
+                  onChange={(e) => setDateDeposited(e.target.value)}
                 />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Cash Disc (₱)
+                  Cash Deposited (₱)
                 </label>
                 <Input
                   type="number"
-                  step="0.001"
-                  value={cashDisc}
-                  onChange={(e) => setCashDisc(parseFloat(e.target.value) || 0)}
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  Cashless Disc (₱)
-                </label>
-                <Input
-                  type="number"
-                  step="0.001"
-                  value={cashlessDisc}
-                  onChange={(e) => setCashlessDisc(parseFloat(e.target.value) || 0)}
+                  step="0.01"
+                  value={cashDeposited}
+                  onChange={(e) => setCashDeposited(parseFloat(e.target.value) || 0)}
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs">
-              <span className="font-semibold text-slate-600">Estimated Net Sales:</span>
-              <span className="font-mono text-base font-extrabold text-[#0E4DA4]">
-                ₱{formatCurrency(liveModalNetSales)}
+          </div>
+
+          {/* Cashless Tenders */}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Cashless Payments (₱)
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Debit</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={debit}
+                  onChange={(e) => setDebit(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Credit</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={credit}
+                  onChange={(e) => setCredit(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">GCash</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={gcash}
+                  onChange={(e) => setGcash(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">PayMaya</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={paymaya}
+                  onChange={(e) => setPaymaya(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Reconciling Items */}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Reconciling Items
               </span>
+              <Button type="button" variant="outline" size="sm" onClick={addReconcilingRow}>
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add Item</span>
+              </Button>
             </div>
+            {reconcilingItems.length === 0 ? (
+              <div className="text-xs text-slate-400 py-1">No reconciling items for this shift.</div>
+            ) : (
+              <div className="space-y-2">
+                {reconcilingItems.map((row, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Input
+                        value={row.item}
+                        onChange={(e) => updateReconcilingRow(idx, { item: e.target.value })}
+                        placeholder="e.g. CHARGE TO ..."
+                      />
+                    </div>
+                    <div className="w-36">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={row.amount}
+                        onChange={(e) =>
+                          updateReconcilingRow(idx, {
+                            amount: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="Amount"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeReconcilingRow(idx)}
+                      className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -741,8 +807,8 @@ export const DsrFuelSalesView: React.FC = () => {
         isOpen={Boolean(toDelete)}
         onClose={() => setToDelete(null)}
         onConfirm={confirmDelete}
-        title="Delete DSR Fuel Entry"
-        description={`Delete ${toDelete?.product} (${toDelete?.date} • ${toDelete?.shift}) for ${toDelete?.stationId}?`}
+        title="Delete DSR Cash Report"
+        description={`Delete DSR for ${toDelete?.stationId} (${toDelete?.date} • ${toDelete?.shift})?`}
         confirmText="Delete"
         variant="danger"
         isLoading={isDeleting}

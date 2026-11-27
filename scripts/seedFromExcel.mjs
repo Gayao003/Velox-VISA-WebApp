@@ -105,7 +105,9 @@ function resolveDsrStationId(stationName, fileName) {
 
 function parseDsrFolder(dirPath) {
   if (!fs.existsSync(dirPath)) return [];
-  const files = fs.readdirSync(dirPath).filter((f) => f.toLowerCase().endsWith('.xlsx'));
+  const files = fs
+    .readdirSync(dirPath)
+    .filter((f) => f.toLowerCase().endsWith('.xlsx') && !f.startsWith('~$'));
   const nowIso = new Date().toISOString();
   const records = [];
 
@@ -123,46 +125,59 @@ function parseDsrFolder(dirPath) {
     }
 
     const fileTag = shortHash(file);
+    let current = null;
 
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const r = rows[i];
       const station = String(r[0] || '').trim();
       const date = excelDateToIso(r[1]);
       const shift = String(r[2] || '').trim();
-      const product = String(r[3] || '').trim();
-      const totalQty = Number(r[4]) || 0;
-      const creditVolume = Number(r[5]) || 0;
-      const cashVolume = Number(r[6]) || 0;
-      const cashlessVolume = Number(r[7]) || 0;
-      const rate = Number(r[8]) || 0;
-      const creditDisc = Number(r[9]) || 0;
-      const cashDisc = Number(r[10]) || 0;
-      const cashlessDisc = Number(r[11]) || 0;
+      const recItem = String(r[13] || '').trim();
+      const recAmtRaw = String(r[14] ?? '').trim();
+      const recAmt = recAmtRaw !== '' && !Number.isNaN(Number(recAmtRaw)) ? Number(recAmtRaw) : 0;
 
-      if (!station && !date && !product) continue;
-      if (!station || !date || !product) continue;
+      if (station.toLowerCase() === 'sheet' || (!station && !date && !shift && !recItem)) {
+        continue;
+      }
 
-      const stationId = resolveDsrStationId(station, file);
+      if (station && date && shift) {
+        const stationId = resolveDsrStationId(station, file);
+        const cashToBeAccounted = Number(r[3]) || 0;
+        const cashOnHand = Number(r[4]) || 0;
+        const varianceRaw = String(r[5] ?? '').trim();
+        const variance =
+          varianceRaw !== '' && !Number.isNaN(Number(varianceRaw))
+            ? Number(varianceRaw)
+            : Number((cashOnHand - cashToBeAccounted).toFixed(2));
+        const dateDeposited = excelDateToIso(r[6]) || String(r[6] || '').trim();
+        const cashDepRaw = String(r[7] ?? '').trim();
+        const cashDeposited =
+          cashDepRaw !== '' && !Number.isNaN(Number(cashDepRaw)) ? Number(cashDepRaw) : 0;
 
-      records.push({
-        id: `dsr_seed_${sanitizeIdPart(stationId)}_${date}_${fileTag}_${i}`,
-        stationId,
-        station,
-        date,
-        shift,
-        product,
-        totalQty,
-        creditVolume,
-        cashVolume,
-        cashlessVolume,
-        rate,
-        creditDisc,
-        cashDisc,
-        cashlessDisc,
-        createdBy: 'Excel Seed',
-        createdAt: nowIso,
-        updatedAt: nowIso,
-      });
+        current = {
+          id: `dsr_seed_${sanitizeIdPart(stationId)}_${date}_${fileTag}_${i}`,
+          stationId,
+          station,
+          date,
+          shift,
+          cashToBeAccounted,
+          cashOnHand,
+          variance,
+          dateDeposited,
+          cashDeposited,
+          debit: Number(r[8]) || 0,
+          credit: Number(r[9]) || 0,
+          gcash: Number(r[10]) || 0,
+          paymaya: Number(r[11]) || 0,
+          reconcilingItems: recItem ? [{ item: recItem, amount: recAmt }] : [],
+          createdBy: 'Excel Seed',
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        };
+        records.push(current);
+      } else if (recItem && current) {
+        current.reconcilingItems.push({ item: recItem, amount: recAmt });
+      }
     }
   }
   return records;
@@ -443,14 +458,14 @@ async function replaceSeedDocs(db, colName, seedPrefix, items) {
 }
 
 async function main() {
-  const dsrRecords = parseDsrFolder(path.join(ROOT, 'DSR'));
+  const dsrRecords = parseDsrFolder(path.join(ROOT, 'VISA Load Files Update 2.0', 'DSR'));
   const sdrRecords = parseSdrFolder(path.join(ROOT, 'AGU1&2 SDR - NOVEMBER'));
   const bprRecords = parseBprFolder(path.join(ROOT, 'BPR'));
   const scrRecords = parseScrFolder(path.join(ROOT, 'SCR'));
   const vdsRecords = parseVdsrFolder(path.join(ROOT, 'VDSR'));
 
   console.log('Parsed Excel records:');
-  console.log(`  DSR  -> dsr_fuel_sales:    ${dsrRecords.length}`);
+  console.log(`  DSR  -> dsr_cash_reports:  ${dsrRecords.length}`);
   console.log(`  SDR  -> shift_deposits:    ${sdrRecords.length}`);
   console.log(`  BPR  -> bank_pickups:      ${bprRecords.length}`);
   console.log(`  SCR  -> shift_collections: ${scrRecords.length}`);
@@ -490,7 +505,8 @@ async function main() {
   const db = getFirestore(app);
 
   console.log(`\nSeeding Cloud Firestore project "${env.VITE_FIREBASE_PROJECT_ID}"...`);
-  await replaceSeedDocs(db, 'dsr_fuel_sales', 'dsr_seed_', dsrRecords);
+  await replaceSeedDocs(db, 'dsr_fuel_sales', 'dsr_seed_', []);
+  await replaceSeedDocs(db, 'dsr_cash_reports', 'dsr_seed_', dsrRecords);
   await replaceSeedDocs(db, 'shift_deposits', 'sdep_seed_', sdrRecords);
   await replaceSeedDocs(db, 'bank_pickups', 'bpk_seed_', bprRecords);
   await replaceSeedDocs(db, 'shift_collections', 'scoll_seed_', scrRecords);

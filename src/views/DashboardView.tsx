@@ -23,21 +23,16 @@ import { Badge } from '../core/ui/badge';
 
 const DONUT_COLORS = ['#0E4DA4', '#0EA5E9', '#00C49A', '#1E293B', '#6366F1', '#64748B'];
 
-const calcDsrNet = (f: {
-  totalQty: number;
-  rate: number;
-  creditDisc: number;
-  cashDisc: number;
-  cashlessDisc: number;
+const sumDsrCashless = (r: {
+  debit: number;
+  credit: number;
+  gcash: number;
+  paymaya: number;
 }) =>
-  (Number(f.totalQty) || 0) * (Number(f.rate) || 0) -
-  ((Number(f.creditDisc) || 0) + (Number(f.cashDisc) || 0) + (Number(f.cashlessDisc) || 0));
-
-const formatLiters = (val: number) =>
-  Number(val || 0).toLocaleString('en-PH', {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
+  (Number(r.debit) || 0) +
+  (Number(r.credit) || 0) +
+  (Number(r.gcash) || 0) +
+  (Number(r.paymaya) || 0);
 
 export const DashboardView: React.FC = () => {
   const navigate = useNavigate();
@@ -47,7 +42,7 @@ export const DashboardView: React.FC = () => {
     collections: allCollections,
     bankPickups: allBankPickups,
     vdsRecords: allVdsRecords,
-    dsrFuelSales: allDsrFuelSales,
+    dsrCashReports: allDsrCashReports,
   } = useDataCache();
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
 
@@ -79,12 +74,12 @@ export const DashboardView: React.FC = () => {
         : allVdsRecords.filter((v) => v.stationId === selectedStation),
     [selectedStation, allVdsRecords]
   );
-  const dsrFuelSales = useMemo(
+  const dsrCashReports = useMemo(
     () =>
       selectedStation === 'All Stations'
-        ? allDsrFuelSales
-        : allDsrFuelSales.filter((f) => f.stationId === selectedStation),
-    [selectedStation, allDsrFuelSales]
+        ? allDsrCashReports
+        : allDsrCashReports.filter((f) => f.stationId === selectedStation),
+    [selectedStation, allDsrCashReports]
   );
 
   const stats = useMemo(() => {
@@ -99,15 +94,20 @@ export const DashboardView: React.FC = () => {
     const pickupCountedTotal = bankPickups.reduce((s, p) => s + (Number(p.countedAmount) || 0), 0);
 
     const totalVds = vdsRecords.reduce((s, v) => s + (Number(v.amount) || 0), 0);
-    const totalDsrSales = dsrFuelSales.reduce((s, f) => s + calcDsrNet(f), 0);
-    const totalDsrLiters = dsrFuelSales.reduce((s, f) => s + (Number(f.totalQty) || 0), 0);
+    const totalDsrCashOnHand = dsrCashReports.reduce((s, r) => s + (Number(r.cashOnHand) || 0), 0);
+    const totalDsrCashToAccount = dsrCashReports.reduce(
+      (s, r) => s + (Number(r.cashToBeAccounted) || 0),
+      0
+    );
+    const totalDsrVariance = dsrCashReports.reduce((s, r) => s + (Number(r.variance) || 0), 0);
+    const totalDsrCashless = dsrCashReports.reduce((s, r) => s + sumDsrCashless(r), 0);
 
     const stationSet = new Set<string>();
     deposits.forEach((d) => d.stationId && stationSet.add(d.stationId));
     collections.forEach((c) => c.stationId && stationSet.add(c.stationId));
     bankPickups.forEach((b) => b.stationId && stationSet.add(b.stationId));
     vdsRecords.forEach((v) => v.stationId && stationSet.add(v.stationId));
-    dsrFuelSales.forEach((f) => f.stationId && stationSet.add(f.stationId));
+    dsrCashReports.forEach((f) => f.stationId && stationSet.add(f.stationId));
 
     return {
       totalDeposits,
@@ -119,16 +119,18 @@ export const DashboardView: React.FC = () => {
       pickupSlipTotal,
       pickupCountedTotal,
       totalVds,
-      totalDsrSales,
-      totalDsrLiters,
-      dsrCount: dsrFuelSales.length,
+      totalDsrCashOnHand,
+      totalDsrCashToAccount,
+      totalDsrVariance,
+      totalDsrCashless,
+      dsrCount: dsrCashReports.length,
       depositCount: deposits.length,
       collectionCount: collections.length,
       pickupCount: bankPickups.length,
       vdsCount: vdsRecords.length,
       activeStations: stationSet.size,
     };
-  }, [deposits, collections, bankPickups, vdsRecords, dsrFuelSales]);
+  }, [deposits, collections, bankPickups, vdsRecords, dsrCashReports]);
 
   // Daily Trend across all 5 registries (last 7 active dates)
   const dailyTrend = useMemo(() => {
@@ -146,10 +148,10 @@ export const DashboardView: React.FC = () => {
     const ensure = (date: string) =>
       map.get(date) || { date, dsr: 0, deposits: 0, pickups: 0, vds: 0, collections: 0 };
 
-    dsrFuelSales.forEach((f) => {
+    dsrCashReports.forEach((f) => {
       if (!f.date) return;
       const cur = ensure(f.date);
-      cur.dsr += calcDsrNet(f);
+      cur.dsr += (Number(f.cashOnHand) || 0) + sumDsrCashless(f);
       map.set(f.date, cur);
     });
     deposits.forEach((d) => {
@@ -186,9 +188,9 @@ export const DashboardView: React.FC = () => {
       ...sorted.map((x) => Math.max(x.dsr, x.deposits, x.pickups, x.vds, x.collections))
     );
     return { items: sorted, maxVal };
-  }, [dsrFuelSales, deposits, bankPickups, vdsRecords, collections]);
+  }, [dsrCashReports, deposits, bankPickups, vdsRecords, collections]);
 
-  // Payment Type Donut Data
+  // Payment Type Donut Data (Collections)
   const paymentBreakdown = useMemo(() => {
     const map = new Map<string, number>();
     collections.forEach((c) => {
@@ -207,47 +209,42 @@ export const DashboardView: React.FC = () => {
     return { items, total };
   }, [collections]);
 
-  // DSR Fuel Breakdown by Product & Tender Volume
+  // DSR Cashless Channels & Reconciling Items Summary
   const dsrBreakdown = useMemo(() => {
-    const productMap = new Map<string, { product: string; liters: number; netSales: number }>();
-    let cashVol = 0;
-    let creditVol = 0;
-    let cashlessVol = 0;
-    let totalDisc = 0;
+    let debit = 0;
+    let credit = 0;
+    let gcash = 0;
+    let paymaya = 0;
+    let reconcilingTotal = 0;
+    let reconcilingCount = 0;
 
-    dsrFuelSales.forEach((f) => {
-      const key = f.product || 'Fuel';
-      const cur = productMap.get(key) || { product: key, liters: 0, netSales: 0 };
-      cur.liters += Number(f.totalQty) || 0;
-      cur.netSales += calcDsrNet(f);
-      productMap.set(key, cur);
-
-      cashVol += Number(f.cashVolume) || 0;
-      creditVol += Number(f.creditVolume) || 0;
-      cashlessVol += Number(f.cashlessVolume) || 0;
-      totalDisc +=
-        (Number(f.creditDisc) || 0) +
-        (Number(f.cashDisc) || 0) +
-        (Number(f.cashlessDisc) || 0);
+    dsrCashReports.forEach((r) => {
+      debit += Number(r.debit) || 0;
+      credit += Number(r.credit) || 0;
+      gcash += Number(r.gcash) || 0;
+      paymaya += Number(r.paymaya) || 0;
+      const items = r.reconcilingItems || [];
+      reconcilingCount += items.length;
+      reconcilingTotal += items.reduce((s, x) => s + (Number(x.amount) || 0), 0);
     });
 
-    const products = Array.from(productMap.values()).sort((a, b) => b.netSales - a.netSales);
-    const maxSales = Math.max(1, ...products.map((p) => p.netSales));
-    const totalVol = Math.max(0.001, cashVol + creditVol + cashlessVol);
+    const channels = [
+      { label: 'GCash', amount: gcash, color: 'bg-sky-500' },
+      { label: 'PayMaya', amount: paymaya, color: 'bg-emerald-500' },
+      { label: 'Credit Card', amount: credit, color: 'bg-[#0E4DA4]' },
+      { label: 'Debit Card', amount: debit, color: 'bg-indigo-500' },
+    ].sort((a, b) => b.amount - a.amount);
 
+    const maxChan = Math.max(1, ...channels.map((c) => c.amount));
     return {
-      products: products.map((p) => ({ ...p, widthPct: (p.netSales / maxSales) * 100 })),
-      cashVol,
-      creditVol,
-      cashlessVol,
-      cashPct: (cashVol / totalVol) * 100,
-      creditPct: (creditVol / totalVol) * 100,
-      cashlessPct: (cashlessVol / totalVol) * 100,
-      totalDisc,
+      channels: channels.map((c) => ({ ...c, widthPct: (c.amount / maxChan) * 100 })),
+      totalCashless: debit + credit + gcash + paymaya,
+      reconcilingTotal,
+      reconcilingCount,
     };
-  }, [dsrFuelSales]);
+  }, [dsrCashReports]);
 
-  // Deposit & VDS Reconciliation Breakdown (Deposits vs Pickups vs VDS + Deposit Type mix)
+  // Deposit & VDS Reconciliation Breakdown
   const reconciliationStats = useMemo(() => {
     const typeMap = new Map<string, number>();
     deposits.forEach((d) => {
@@ -295,8 +292,8 @@ export const DashboardView: React.FC = () => {
         collections: number;
         pickups: number;
         vds: number;
-        dsr: number;
-        liters: number;
+        dsrCash: number;
+        dsrCashless: number;
       }
     >();
     const ensure = (st: string) =>
@@ -306,8 +303,8 @@ export const DashboardView: React.FC = () => {
         collections: 0,
         pickups: 0,
         vds: 0,
-        dsr: 0,
-        liters: 0,
+        dsrCash: 0,
+        dsrCashless: 0,
       };
 
     deposits.forEach((d) => {
@@ -334,18 +331,18 @@ export const DashboardView: React.FC = () => {
       cur.vds += Number(v.amount) || 0;
       map.set(v.stationId, cur);
     });
-    dsrFuelSales.forEach((f) => {
+    dsrCashReports.forEach((f) => {
       if (!f.stationId) return;
       const cur = ensure(f.stationId);
-      cur.dsr += calcDsrNet(f);
-      cur.liters += Number(f.totalQty) || 0;
+      cur.dsrCash += Number(f.cashOnHand) || 0;
+      cur.dsrCashless += sumDsrCashless(f);
       map.set(f.stationId, cur);
     });
 
     return Array.from(map.values())
-      .sort((a, b) => b.dsr + b.deposits - (a.dsr + a.deposits))
+      .sort((a, b) => b.dsrCash + b.deposits - (a.dsrCash + a.deposits))
       .slice(0, 5);
-  }, [deposits, collections, bankPickups, vdsRecords, dsrFuelSales]);
+  }, [deposits, collections, bankPickups, vdsRecords, dsrCashReports]);
 
   // SVG Donut segments
   const donutSegments = useMemo(() => {
@@ -393,7 +390,7 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
         <p className="text-xs text-slate-500 font-medium">
-          Real-time summary across Shift Deposits, Shift Collections, Bank Pickups, VDS Registry, and DSR Fuel Sales
+          Real-time summary across Shift Deposits, Shift Collections, Bank Pickups, VDS Registry, and DSR Cash Consolidated
         </p>
       </div>
 
@@ -491,18 +488,18 @@ export const DashboardView: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              DSR Fuel Sales
+              DSR Cash on Hand
             </span>
             <div className="p-2 rounded-xl bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors">
               <Fuel className="h-4 w-4" />
             </div>
           </div>
           <div className="text-2xl font-extrabold text-sky-700 mt-2 font-mono">
-            ₱{formatCurrency(stats.totalDsrSales)}
+            ₱{formatCurrency(stats.totalDsrCashOnHand)}
           </div>
           <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
             <span>
-              {stats.dsrCount} row(s) • {Math.round(stats.totalDsrLiters).toLocaleString('en-PH')} L
+              {stats.dsrCount} shift(s) • Cashless: ₱{formatCurrency(stats.totalDsrCashless)}
             </span>
             <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-sky-600 transition-colors" />
           </div>
@@ -511,7 +508,6 @@ export const DashboardView: React.FC = () => {
 
       {/* Row 2: Daily 5-Registry Trend & Collection Payment Mix */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Bar Chart: DSR, Deposits, Pickups, VDS, Collections by Date */}
         <div className="lg:col-span-2 p-5 rounded-2xl bg-white border border-slate-200 shadow-card flex flex-col justify-between">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div>
@@ -520,12 +516,12 @@ export const DashboardView: React.FC = () => {
                 <span>Daily Operations Trend</span>
               </h3>
               <p className="text-[11px] text-slate-500">
-                DSR Fuel Sales, Shift Deposits, Bank Pickups, VDS & Collections (last 7 dates)
+                DSR (Cash + Cashless), Shift Deposits, Bank Pickups, VDS & Collections (last 7 dates)
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold">
               <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="h-2.5 w-2.5 rounded-sm bg-sky-500" /> DSR Sales
+                <span className="h-2.5 w-2.5 rounded-sm bg-sky-500" /> DSR Tender
               </span>
               <span className="flex items-center gap-1.5 text-slate-600">
                 <span className="h-2.5 w-2.5 rounded-sm bg-[#0E4DA4]" /> Deposits
@@ -671,18 +667,17 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 3: DSR Fuel Product & Volume Breakdown + Bank Pickup & VDS Reconciliation */}
+      {/* Row 3: DSR Cashless & Variance Summary + Deposit/Pickup/VDS Reconciliation */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* DSR Fuel Sales by Product & Tender Volume */}
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-card space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
                 <Fuel className="h-4 w-4 text-sky-600" />
-                <span>DSR Fuel Product & Volume Mix</span>
+                <span>DSR Cashless Tenders & Reconciling Summary</span>
               </h3>
               <p className="text-[11px] text-slate-500">
-                Net fuel revenue and liters sold by product & tender
+                Cash accounting variance, cashless channels, and reconciling items
               </p>
             </div>
             <button
@@ -693,76 +688,45 @@ export const DashboardView: React.FC = () => {
             </button>
           </div>
 
-          {dsrBreakdown.products.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-400">No DSR fuel sales yet</div>
-          ) : (
-            <div className="space-y-4">
-              <div className="space-y-2.5">
-                {dsrBreakdown.products.map((p) => (
-                  <div key={p.product} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-slate-700">
-                        {p.product}{' '}
-                        <span className="text-slate-400 font-mono">
-                          ({formatLiters(p.liters)} L)
-                        </span>
-                      </span>
-                      <span className="font-mono font-bold text-slate-900">
-                        ₱{formatCurrency(p.netSales)}
-                      </span>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        style={{ width: `${p.widthPct}%` }}
-                        className="h-full rounded-full bg-sky-500 transition-all duration-500"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Tender Volume Split Bar */}
-              <div className="pt-3 border-t border-slate-100 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <span>Volume by Tender</span>
-                  <span className="font-mono text-amber-600 normal-case">
-                    Total Discounts: ₱{formatCurrency(dsrBreakdown.totalDisc)}
-                  </span>
-                </div>
-                <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden flex">
-                  <div
-                    style={{ width: `${dsrBreakdown.cashPct}%` }}
-                    className="bg-[#0E4DA4]"
-                    title={`Cash: ${formatLiters(dsrBreakdown.cashVol)} L`}
-                  />
-                  <div
-                    style={{ width: `${dsrBreakdown.creditPct}%` }}
-                    className="bg-emerald-500"
-                    title={`Credit: ${formatLiters(dsrBreakdown.creditVol)} L`}
-                  />
-                  <div
-                    style={{ width: `${dsrBreakdown.cashlessPct}%` }}
-                    className="bg-sky-400"
-                    title={`Cashless: ${formatLiters(dsrBreakdown.cashlessVol)} L`}
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-[11px] font-semibold">
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="h-2 w-2 rounded-full bg-[#0E4DA4]" />
-                    <span>Cash: {formatLiters(dsrBreakdown.cashVol)} L</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>Credit: {formatLiters(dsrBreakdown.creditVol)} L</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="h-2 w-2 rounded-full bg-sky-400" />
-                    <span>Cashless: {formatLiters(dsrBreakdown.cashlessVol)} L</span>
-                  </div>
-                </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200">
+              <div className="text-[11px] font-bold text-[#0E4DA4]">Cash to be Accounted</div>
+              <div className="text-lg font-extrabold font-mono text-slate-900 mt-1">
+                ₱{formatCurrency(stats.totalDsrCashToAccount)}
               </div>
             </div>
-          )}
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="text-[11px] font-bold text-slate-600">
+                Net Variance ({dsrBreakdown.reconcilingCount} Rec. Items)
+              </div>
+              <div
+                className={`text-lg font-extrabold font-mono mt-1 ${
+                  stats.totalDsrVariance < -0.01 ? 'text-red-600' : 'text-emerald-600'
+                }`}
+              >
+                {stats.totalDsrVariance >= 0 ? '+' : ''}₱{formatCurrency(stats.totalDsrVariance)}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2.5 pt-1">
+            {dsrBreakdown.channels.map((ch) => (
+              <div key={ch.label} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-700">{ch.label}</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    ₱{formatCurrency(ch.amount)}
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    style={{ width: `${ch.widthPct}%` }}
+                    className={`h-full rounded-full ${ch.color} transition-all duration-500`}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Bank Pickup & VDS Reconciliation */}
@@ -831,6 +795,12 @@ export const DashboardView: React.FC = () => {
                 </span>
               </span>
             </div>
+            <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+              <span className="text-slate-600 font-medium">Reconciling Items Total</span>
+              <span className="font-mono font-bold text-amber-700">
+                ₱{formatCurrency(dsrBreakdown.reconcilingTotal)}
+              </span>
+            </div>
             {reconciliationStats.depositTypes.length > 0 && (
               <div className="flex items-center justify-between pt-1">
                 <span className="text-slate-600 font-medium">Shift Deposit Mix</span>
@@ -849,7 +819,6 @@ export const DashboardView: React.FC = () => {
 
       {/* Row 4: Collection Purposes & Active Stations across all 5 registries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Collection Purposes */}
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-card space-y-4">
           <div>
             <h3 className="text-sm font-extrabold text-slate-900">Collections by Purpose</h3>
@@ -879,15 +848,12 @@ export const DashboardView: React.FC = () => {
           )}
         </div>
 
-        {/* Active Stations across all 5 registries */}
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-card space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Active Stations Summary</h3>
-              <p className="text-[11px] text-slate-500">
-                Breakdown across DSR Fuel Sales, Deposits, Pickups, VDS & Collections
-              </p>
-            </div>
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900">Active Stations Summary</h3>
+            <p className="text-[11px] text-slate-500">
+              Breakdown across DSR Cash/Cashless, Deposits, Pickups, VDS & Collections
+            </p>
           </div>
           {topStations.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400">No station activity yet</div>
@@ -903,10 +869,12 @@ export const DashboardView: React.FC = () => {
                       </span>
                     </div>
                     <span className="font-mono font-extrabold text-[#0E4DA4] shrink-0 ml-2">
-                      DSR: ₱{formatCurrency(st.dsr)} ({Math.round(st.liters).toLocaleString('en-PH')} L)
+                      DSR Cash: ₱{formatCurrency(st.dsrCash)}
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 font-mono">
+                    <span>Cashless: ₱{formatCurrency(st.dsrCashless)}</span>
+                    <span>•</span>
                     <span>Dep: ₱{formatCurrency(st.deposits)}</span>
                     <span>•</span>
                     <span>BPK: ₱{formatCurrency(st.pickups)}</span>

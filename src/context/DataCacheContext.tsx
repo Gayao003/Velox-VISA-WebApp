@@ -5,7 +5,7 @@ import {
   MeterReadingRecord,
   BankPickupRecord,
   VdsRecord,
-  DsrFuelSaleRecord,
+  DsrCashReportRecord,
 } from '../models/visa';
 import { firestoreService } from '../services/firestoreService';
 
@@ -15,7 +15,7 @@ interface DataCacheContextValue {
   meterReadings: MeterReadingRecord[];
   bankPickups: BankPickupRecord[];
   vdsRecords: VdsRecord[];
-  dsrFuelSales: DsrFuelSaleRecord[];
+  dsrCashReports: DsrCashReportRecord[];
   isHydrated: boolean;
 }
 
@@ -47,8 +47,8 @@ export const DataCacheProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     readCached<VdsRecord>('vds_records')
   );
 
-  const [dsrFuelSales, setDsrFuelSales] = useState<DsrFuelSaleRecord[]>(() =>
-    readCached<DsrFuelSaleRecord>('dsr_fuel_sales')
+  const [dsrCashReports, setDsrCashReports] = useState<DsrCashReportRecord[]>(() =>
+    readCached<DsrCashReportRecord>('dsr_cash_reports')
   );
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export const DataCacheProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
     const unsubBpk = firestoreService.subscribe<BankPickupRecord>('bank_pickups', setBankPickups);
     const unsubVds = firestoreService.subscribe<VdsRecord>('vds_records', setVdsRecords);
-    const unsubDsr = firestoreService.subscribe<DsrFuelSaleRecord>('dsr_fuel_sales', setDsrFuelSales);
+    const unsubDsr = firestoreService.subscribe<DsrCashReportRecord>('dsr_cash_reports', setDsrCashReports);
 
     return () => {
       unsubDep();
@@ -77,7 +77,7 @@ export const DataCacheProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   return (
     <DataCacheContext.Provider
-      value={{ deposits, collections, meterReadings, bankPickups, vdsRecords, dsrFuelSales, isHydrated: true }}
+      value={{ deposits, collections, meterReadings, bankPickups, vdsRecords, dsrCashReports, isHydrated: true }}
     >
       {children}
     </DataCacheContext.Provider>
