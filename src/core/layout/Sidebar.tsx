@@ -124,15 +124,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onCollapsedChan
       }}
     >
       {/* Brand Header */}
-      <div className="h-16 flex items-center justify-center px-4 border-b border-slate-200 overflow-hidden shrink-0">
+      <div className={cn(
+        'h-16 flex items-center justify-center border-b border-slate-200 overflow-hidden shrink-0',
+        isExpanded ? 'px-2' : 'px-1'
+      )}>
         {!logoError ? (
           <img
             src="/visa-logo.png"
             alt="TRACE"
             onError={() => setLogoError(true)}
             className={cn(
-              'w-auto object-contain transition-all duration-200',
-              isExpanded ? 'h-9 max-w-[155px]' : 'h-7 max-w-[42px]'
+              'object-contain transition-all duration-200',
+              isExpanded ? 'h-16 w-full scale-[1.14]' : 'h-9 w-full'
             )}
           />
         ) : (
